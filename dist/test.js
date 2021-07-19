@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const parse_1 = require("./src/parse");
+const lex_1 = require("./src/lex");
 const assert_1 = require("assert");
 const letters = [
     "a",
@@ -32,14 +32,14 @@ const letters = [
 ];
 const digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const delimeters = ["<", ">", ".", "!", "=", ":", ";", "/", "=", "+", "-"];
-assert_1.equal(letters.every((value) => parse_1.isLetter(value)), true);
+assert_1.equal(letters.every((value) => lex_1.isLetter(value)), true);
 assert_1.equal(letters
     .map((value) => value.toUpperCase())
-    .every((value) => parse_1.isLetter(value)), true);
-assert_1.equal(digits.every((value) => parse_1.isLetter(value)), false);
-assert_1.equal(delimeters.every((value) => parse_1.isLetter(value)), false);
-assert_1.equal(digits.every((value) => parse_1.isDigit(value)), true);
-assert_1.equal(letters.every((value) => parse_1.isDigit(value)), false, "Is digit failed");
-assert_1.equal(delimeters.every((value) => parse_1.isDigit(value)), false);
+    .every((value) => lex_1.isLetter(value)), true);
+assert_1.equal(digits.every((value) => lex_1.isLetter(value)), false);
+assert_1.equal(delimeters.every((value) => lex_1.isLetter(value)), false);
+assert_1.equal(digits.every((value) => lex_1.isDigit(value)), true);
+assert_1.equal(letters.every((value) => lex_1.isDigit(value)), false, "Is digit failed");
+assert_1.equal(delimeters.every((value) => lex_1.isDigit(value)), false);
 console.log("All tests passed!");
 //# sourceMappingURL=test.js.map

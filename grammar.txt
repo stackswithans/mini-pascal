@@ -13,15 +13,21 @@ Syntax in recursive descent order
 var <variable declaration> ;
     { <variable declaration> ; }
 
+
 <variable declaration> ::=	<identifier > { , <identifier> } : <type>
+
 
 <type> ::=	<simple type> | <array type>
 
+
 <array type> ::=	array [ <index range> ] of <simple type>
+
 
 <index range> ::=	<integer constant> .. <integer constant>
 
+
 <simple type> ::=	<type identifier>
+
 
 <type identifier> ::=	<identifier>
 

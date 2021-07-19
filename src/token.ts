@@ -17,8 +17,8 @@ export enum TT {
     DOTDOT,
     COLON,
     LPAR,
-    LBRACE,
-    RBRACE,
+    LBRACK,
+    RBRACK,
     RPAR,
     COMMA,
     SEMICOL,
@@ -40,6 +40,8 @@ export enum TT {
     ARRAY,
     PROCEDURE,
     PROGRAM,
+    STRING,
+    EOF,
 }
 
 const keywords = {

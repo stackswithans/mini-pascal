@@ -1,4 +1,4 @@
-import { isDigit, isLetter } from "./src/parse";
+import { isDigit, isLetter } from "./src/lex";
 import { equal } from "assert";
 
 const letters = [
