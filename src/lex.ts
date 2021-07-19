@@ -49,6 +49,12 @@ export class Lexer {
         }
 
         let char = this.getChar();
+        const whitespace = /\s/;
+        //Skip whitespace
+        while (whitespace.test(char)) {
+            this.advanceChar();
+            let char = this.getChar();
+        }
 
         if (literals.aritOps.some((value) => char === value)) {
             this.state = LexState.ARITHOP;
