@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc -p . --outDir dist/", 
-    "test": "npm run build && node ./dist/test.js"
+    "test": "npm run build && node ./dist/test.js", 
+    "main": "npm run build && node ./dist/src/main.js"
   },
   "keywords": [],
   "author": "",

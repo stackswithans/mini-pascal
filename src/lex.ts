@@ -14,7 +14,7 @@ enum LexState {
 const literals = {
     aritOps: ["+", "-", "*", "/"],
     logicOps: ["<", ">", "="],
-    delimeters: ["(", ")", "[", "]", ".", ",", ":"],
+    delimeters: ["(", ")", "[", "]", ".", ",", ":", ";"],
 };
 
 export const isDigit = (char: string) => {
@@ -53,7 +53,7 @@ export class Lexer {
         //Skip whitespace
         while (whitespace.test(char)) {
             this.advanceChar();
-            let char = this.getChar();
+            char = this.getChar();
         }
 
         if (literals.aritOps.some((value) => char === value)) {
@@ -68,6 +68,8 @@ export class Lexer {
             this.state = LexState.IDENTIFIER;
         } else if (char === "'" || char === '"') {
             this.state = LexState.STRING;
+        } else {
+            throw new Error("Lexema desconhecido: " + char);
         }
     }
 
@@ -90,8 +92,7 @@ export class Lexer {
         if (this.cursor >= this.program.length) {
             return "";
         }
-        let char = this.program[this.cursor];
-        return char;
+        return this.program[this.cursor];
     }
 
     private peekNextChar(): string {
@@ -108,7 +109,7 @@ export class Lexer {
                     case "+":
                         token = new Token(
                             TT.ADDOP,
-                            char,
+                            this.advanceChar(),
                             this.fLine,
                             this.fCol
                         );
@@ -116,7 +117,7 @@ export class Lexer {
                     case "-":
                         token = new Token(
                             TT.SUBOP,
-                            char,
+                            this.advanceChar(),
                             this.fLine,
                             this.fCol
                         );
@@ -124,7 +125,7 @@ export class Lexer {
                     case "/":
                         token = new Token(
                             TT.DIVOP,
-                            char,
+                            this.advanceChar(),
                             this.fLine,
                             this.fCol
                         );
@@ -132,7 +133,7 @@ export class Lexer {
                     case "*":
                         token = new Token(
                             TT.MULOP,
-                            char,
+                            this.advanceChar(),
                             this.fLine,
                             this.fCol
                         );
@@ -156,7 +157,10 @@ export class Lexer {
                                 this.advanceChar() + this.advanceChar();
                             token.lexeme = lexeme;
                             token.token = TT.LESSEQ;
+                        } else {
+                            token.lexeme = this.advanceChar();
                         }
+
                         break;
                     }
                     case ">": {
@@ -173,11 +177,18 @@ export class Lexer {
                                 this.advanceChar() + this.advanceChar();
                             token.lexeme = lexeme;
                             token.token = TT.GREATEREQ;
+                        } else {
+                            token.lexeme = this.advanceChar();
                         }
                         break;
                     }
                     case "=":
-                        token = new Token(TT.EQ, char, this.fLine, this.fCol);
+                        token = new Token(
+                            TT.EQ,
+                            this.advanceChar(),
+                            this.fLine,
+                            this.fCol
+                        );
                         break;
                 }
                 break;
@@ -186,7 +197,15 @@ export class Lexer {
                     case ":":
                         token = new Token(
                             TT.COLON,
-                            char,
+                            this.advanceChar(),
+                            this.fLine,
+                            this.fCol
+                        );
+                        break;
+                    case ";":
+                        token = new Token(
+                            TT.SEMICOL,
+                            this.advanceChar(),
                             this.fLine,
                             this.fCol
                         );
@@ -194,21 +213,31 @@ export class Lexer {
                     case ",":
                         token = new Token(
                             TT.COMMA,
-                            char,
+                            this.advanceChar(),
                             this.fLine,
                             this.fCol
                         );
                         break;
                     case "(":
-                        token = new Token(TT.LPAR, char, this.fLine, this.fCol);
+                        token = new Token(
+                            TT.LPAR,
+                            this.advanceChar(),
+                            this.fLine,
+                            this.fCol
+                        );
                         break;
                     case ")":
-                        token = new Token(TT.RPAR, char, this.fLine, this.fCol);
+                        token = new Token(
+                            TT.RPAR,
+                            this.advanceChar(),
+                            this.fLine,
+                            this.fCol
+                        );
                         break;
                     case "[":
                         token = new Token(
                             TT.LBRACK,
-                            char,
+                            this.advanceChar(),
                             this.fLine,
                             this.fCol
                         );
@@ -216,13 +245,18 @@ export class Lexer {
                     case "]":
                         token = new Token(
                             TT.RBRACK,
-                            char,
+                            this.advanceChar(),
                             this.fLine,
                             this.fCol
                         );
                         break;
                     case ".":
-                        token = new Token(TT.DOT, char, this.fLine, this.fCol);
+                        token = new Token(
+                            TT.DOT,
+                            this.advanceChar(),
+                            this.fLine,
+                            this.fCol
+                        );
                         let next = this.peekNextChar();
                         if (next === ".") {
                             //Avançar twice
@@ -234,7 +268,8 @@ export class Lexer {
                         break;
                 }
                 break;
-            case LexState.NUMBER:
+            case LexState.NUMBER: {
+                let start = this.fCol;
                 let number = "";
                 const buildNumber = () => {
                     while (isDigit(this.getChar())) {
@@ -246,7 +281,7 @@ export class Lexer {
                 if (this.getChar() === "." && isDigit(this.peekNextChar())) {
                     number += this.advanceChar() + this.advanceChar();
                     buildNumber();
-                    token = new Token(TT.FLOAT, number, this.fLine, this.fCol);
+                    token = new Token(TT.FLOAT, number, this.fLine, start);
                 } else {
                     //Caso for inteiro
                     token = new Token(
@@ -257,22 +292,27 @@ export class Lexer {
                     );
                 }
                 break;
-            case LexState.STRING:
+            }
+            case LexState.STRING: {
+                let start = this.fCol;
                 const delimeter = this.advanceChar();
                 let string = delimeter;
                 while (this.getChar() != delimeter) {
                     string += this.advanceChar();
                 }
-                string += delimeter;
-                token = new Token(TT.STRING, string, this.fLine, this.fCol);
+                string += this.advanceChar();
+                token = new Token(TT.STRING, string, this.fLine, start);
                 break;
+            }
             case LexState.IDENTIFIER: {
                 let identifier = "";
+                let start = this.fCol;
                 let char = this.getChar();
                 while (isDigit(char) || isLetter(char)) {
                     identifier += this.advanceChar();
+                    char = this.getChar();
                 }
-                token = new Token(TT.ID, identifier, this.fLine, this.fCol);
+                token = Token.fromID(identifier, this.fLine, start);
                 break;
             }
             case LexState.EOF:
