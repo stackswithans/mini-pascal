@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target":"ES6", 
+        "module": "CommonJS",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "allowUnreachableCode": false, 
+        "sourceMap": true
+    },
+    "include": ["./src/**/*","./test.ts"],
+    "exclude": ["node_modules", "**/*.spec.ts"]
+}
