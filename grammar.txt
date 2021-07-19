@@ -1,125 +1,96 @@
-Syntax in recursive descent order
 
-<program> ::=	program <identifier> ; <block> .
+program : PROGRAM identifier ; block DOT
 
-<block> ::=	<variable declaration part>
-
-<procedure declaration part>
-
-<statement part>
-
-<variable declaration part> ::=	<empty> |
-
-var <variable declaration> ;
-    { <variable declaration> ; }
+block : var_decl_sect
+      | sub_decl_sect
+      | statement_sect
+      ;
 
 
-<variable declaration> ::=	<identifier > { , <identifier> } : <type>
+var_decl_sect : empty
+         | VAR var_decl SEMICOL ( var_decl SEMICOL)*
+         ;
+
+var_decl : identifier (COMMA identifier)* COLON type 
+         ;
+
+type : simple_type
+     | array_type
+     ;
+
+array_type : ARRAY LBRACK index_range RBRACK OF simple_type;
+
+index_range : integer_constant DOTDOT integer_constant;
+
+simple_type : char | integer | integer;
 
 
-<type> ::=	<simple type> | <array type>
+sub_decl_sect : proc_decl SEMICOL 
+              | func_decl
+              ;
+
+proc_decl : PROCEDURE identifier formal_params SEMICOL block;
+
+func_decl : FUNCTION identifier formal_params COLON type SEMICOL block;
+
+formal_params : LPAR param_section RPAR; 
+
+param_section: var_decl (SEMICOL var_decl SEMICOL);
 
 
-<array type> ::=	array [ <index range> ] of <simple type>
+stmt_sect : cmpnd_stmt;
 
+cmpnd_stmt: BEGIN statement (SEMICOL statement) END;
 
-<index range> ::=	<integer constant> .. <integer constant>
+statement : simple_stmt
+          | struct_stmt
+          ;
 
+simple_stmt : variable (ASSIGN expression)? 
+            | read_stmt 
+            | write_stmt
+            ;
 
-<simple type> ::=	<type identifier>
+read_stmt : READ args;
 
+write_stmt : WRITE args;
 
-<type identifier> ::=	<identifier>
+args: LPAR variable (COMMA variable)* RPAR
 
-<procedure declaration part> ::=	{ <procedure declaration> ; }
+struct_stmt: cmpnd_stmt
+           | if_stmt
+           | while_stmt
+           ;
 
-<procedure declaration> ::=	procedure <identifier> ; <block>
+if_stmt : IF expression THEN statement (ELSE statement)?
 
-<statement part> ::=	<compound statement>
+while_stmt : WHILE expression do statement
 
-<compound statement> ::=	begin <statement>{ ; <statement> } end
+expression : simple_expression (relational_op simple_expression)? ;
 
-<statement> ::=	<simple statement> | <structured statement>
+simple_expression : (sign)? term (adding_op term)* ;
 
-<simple statement> ::=	<assignment statement> | <procedure statement> |
-<read statement> | <write statement>
+term : factor (mult_op factor)*;
 
-<assignment statement> ::=	<variable> := <expression>
+factor : variable | constant | LPAR expression RPAR | NOT factor;
 
-<procedure statement> ::=	<procedure identifier>
+rel_op : EQ 
+       | NOTEQ 
+       | LESS 
+       | LESSEQ 
+       | GREATEREQ 
+       | GREATEREQ 
+       | OR
+       | AND
+       ;
+       
+add_op : PLUSOP
+       | SUBOP
+       ;
 
-<procedure identifier> ::=	<identifier>
+mult_op: MULOP
+       | DIV
+       | SLASH
+       ;
 
-<read statement> ::=	read ( <input variable> { , <input variable> } )
-
-<input variable> ::=	<variable>
-
-<write statement> ::=	write ( <output value> { , <output value> } )
-
-<output value> ::=	<expression>
-
-<structured statement> ::=	<compound statement> | <if statement> |
-
-<while statement>
-
-<if statement> : if <expression> then <statement> 
-               | if <expression> then <statement> else <statement>
-
-<while statement> ::=	while <expression> do <statement>
-
-<expression> ::=	<simple expression> |
-
-<simple expression> <relational operator> <simple expression>
-
-<simple expression> ::=	<sign> <term> { <adding operator> <term> }
-
-<term> ::=	<factor> { <multiplying operator> <factor> }
-
-<factor> ::=	<variable> | <constant> | ( <expression> ) | not <factor>
-
-<relational operator> ::=	= | <> | < | <= | >= | >
-
-<sign> ::=	+ | - | <empty>
-
-<adding operator> ::=	+ | - | or
-
-<multiplying operator> ::=	* | div | and
-
-<variable> ::=	<entire variable> | <indexed variable>
-
-<indexed variable> ::=	<array variable> [ <expression> ]
-
-<array variable> ::=	<entire variable>
-
-<entire variable> ::=	<variable identifier>
-
-<variable identifier> ::=	<identifier>
-
-Lexical grammar
-
-<constant> ::=	<integer constant> | <character constant> | <constant identifier>
-
-<constant identifier> ::=	<identifier>
-
-<identifier> ::=	<letter> { <letter or digit> }
-
-<letter or digit> ::=	<letter> | <digit>
-
-<integer constant> ::=	<digit> { <digit> }
-
-<character constant> ::=	'< any character other than ' >'  |  ''''
-
-<letter> ::=	a | b | c | d | e | f | g | h | i | j | k | l | m | n | o |
-p | q | r | s | t | u | v | w | x | y | z | A | B | C |
-D | E | F | G | H | I | J | K | L | M | N | O | P
-| Q | R | S | T | U | V | W | X | Y | Z
-
-<digit> ::=	0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-
-<special symbol> ::=	+ | - | * | = | <> | < | > | <= | >= |
-( | ) | [ | ] | := | . | , | ; | : | .. | div | or |
-and | not | if | then | else | of | while | do |
-begin | end | read | write | var | array |
-procedure | program
-
-<predefined identifier> ::=	integer | Boolean | true | false
+variable : identifier (LPAR [expression] RPAR)?;

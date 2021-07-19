@@ -5,7 +5,7 @@
 250 230
 231.12123 231.1221
 23.
-integer  Boolean  true  false
+integer  boolean char real  true  false
 0  1  2  3  4  5  6  7  8  9
 + 
 - 
@@ -31,4 +31,5 @@ or
 and  
 not if then else of  while  do 
 begin  end  read  write  var  array 
-procedure  program
+procedure  function program
+

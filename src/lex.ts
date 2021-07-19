@@ -7,7 +7,6 @@ enum LexState {
     IDENTIFIER,
     NUMBER,
     STRING,
-    WHITESPACE,
     EOF,
 }
 
@@ -284,12 +283,7 @@ export class Lexer {
                     token = new Token(TT.FLOAT, number, this.fLine, start);
                 } else {
                     //Caso for inteiro
-                    token = new Token(
-                        TT.INTEGER,
-                        number,
-                        this.fLine,
-                        this.fCol
-                    );
+                    token = new Token(TT.INT, number, this.fLine, this.fCol);
                 }
                 break;
             }
