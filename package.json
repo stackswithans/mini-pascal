@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "./node_modules/typescript/bin/tsc -p . --outDir dist/",
+    "build": "./node_modules/typescript/bin/tsc -p .",
     "test": "npm run build && node ./dist/test.js",
     "main": "npm run build && node ./dist/src/main.js"
   },

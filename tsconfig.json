@@ -6,7 +6,8 @@
         "removeComments": true,
         "preserveConstEnums": true,
         "allowUnreachableCode": false, 
-        "sourceMap": true
+        "sourceMap": true, 
+        "outDir":"./dist/" 
     },
     "include": ["./src/**/*","./test.ts"],
     "exclude": ["node_modules", "**/*.spec.ts"]
