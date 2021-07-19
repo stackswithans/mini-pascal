@@ -254,12 +254,7 @@ export class Lexer {
                         );
                         break;
                     case ".":
-                        token = new Token(
-                            TT.DOT,
-                            this.advanceChar(),
-                            this.fLine,
-                            this.fCol
-                        );
+                        token = new Token(TT.DOT, char, this.fLine, this.fCol);
                         let next = this.peekNextChar();
                         if (next === ".") {
                             //Avançar twice
@@ -267,6 +262,8 @@ export class Lexer {
                                 this.advanceChar() + this.advanceChar();
                             token.lexeme = lexeme;
                             token.token = TT.DOTDOT;
+                        } else {
+                            token.lexeme = this.advanceChar();
                         }
                         break;
                 }
