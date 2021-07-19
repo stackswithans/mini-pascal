@@ -1,0 +1,15 @@
+program FILEMONMEUPAI;
+var 
+angola, we:integer;
+roberto, ngunga:char;
+RealArray : array[1..100] of real;
+begin 
+roberto := 11;
+while Angola>1 do 
+begin
+      writeln('value of a: ', a);
+      a := a + 1;
+   end;
+for i := 1 to 10 do 
+writeln(i);
+end. 

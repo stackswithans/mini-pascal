@@ -1,0 +1,16 @@
+program FILEMONMEUPAI;
+var 
+angola,: real;
+begin 
+angola = 11;
+if angola := 1 then
+   writeln('You have chosen a red car');
+else 
+readln(angola,id);
+
+while number>0 do 
+begin
+   sum := sum + number;
+   number := number - 2;
+end;
+end.
