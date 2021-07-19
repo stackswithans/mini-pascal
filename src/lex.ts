@@ -68,7 +68,10 @@ export class Lexer {
             this.state = LexState.IDENTIFIER;
         } else if (char === "'" || char === '"') {
             this.state = LexState.STRING;
+        } else if (char == "") {
+            this.state = LexState.EOF;
         } else {
+            console.dir(char);
             throw new Error("Lexema desconhecido: " + char);
         }
     }

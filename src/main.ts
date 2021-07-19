@@ -11,6 +11,7 @@ const main = () => {
     console.log("HELOO 2");
     let token = lexer.nextToken();
     while (token.token !== TT.EOF) {
+        console.log(`Type: ${token.token}`);
         console.log(`Lexema: ${token.lexeme}`);
         console.log(`Linha: ${token.line}`);
         console.log(`Coluna: ${token.col}`);
