@@ -1,5 +1,6 @@
 import { Lexer } from "./lex";
 import { Token, TT } from "./token";
+import { Program, Block, Type, ArrayType, ArrayRange, VarDecl } from "./nodes";
 
 type ParseError = { message: string; line: number; col: number };
 
@@ -34,9 +35,9 @@ export class Parser {
 
     private program(): Program {
         this.consume(TT.PROGRAM);
-        let id = this.identifier();
+        let id = this.consume(TT.ID);
         this.consume(TT.SEMICOL);
-        let block = block;
+        let block = this.block();
         this.consume(TT.DOT);
         return new Program(id, block);
     }
@@ -44,10 +45,15 @@ export class Parser {
     private block(): Block {
         let block = new Block();
         if (this.match(TT.VAR)) {
-            block.var_decls = this.var_decl_sect();
+            block.pushInstructions(this.var_decl_sect());
         }
-        block.sub_decls = this.sub_decl_sect();
-        block.statements = this.statement_sect();
+        /*
+        if (this.match(TT.PROCEDURE) || this.match(TT.PROGRAM)) {
+            block.pushInstructions(this.sub_decl_sect());
+        }
+        if (this.match(TT.BEGIN)) {
+            block.pushInstructions(this.compound_stmt());
+        }*/
         return block;
     }
 
@@ -60,6 +66,7 @@ export class Parser {
             declarations.push(this.var_decl());
             this.consume(TT.SEMICOL);
         }
+        return declarations;
     }
 
     private var_decl(): VarDecl {
@@ -69,28 +76,28 @@ export class Parser {
         return new VarDecl(id, sem_type);
     }
 
-    private sem_type(): Type {
+    private sem_type(): ArrayType | Type {
         if (
             this.match(TT.CHAR) ||
             this.match(TT.INTEGER) ||
             this.match(TT.REAL)
         ) {
-            return new Type(this.simple_type(), false);
+            return new Type(this.simple_type());
         }
         let tok = this.consume(TT.ARRAY);
         this.consume(TT.LBRACK);
         let range = this.index_range();
         this.consume(TT.RBRACK);
         this.consume(TT.OF);
-        let s_type = this.simple_type();
+        let s_type = new Type(this.simple_type());
         return new ArrayType(tok, range, s_type);
     }
 
-    private index_range(): Range {
+    private index_range(): ArrayRange {
         let start = this.consume(TT.INT);
         this.consume(TT.DOTDOT);
         let end = this.consume(TT.INT);
-        return new Range(start, end, range);
+        return { start, end };
     }
 
     private simple_type(): Token {
@@ -105,10 +112,16 @@ export class Parser {
                 throw new Error("Tipo de dados inválido");
         }
     }
-
+    /*
     private sub_decl_sect(): SubRoutine[] {
         let subroutines: SubRoutine[] = [];
-        while (this.match(TT.PROCEDURE) || this.match(TT.FUNCTION)) {}
+        while (this.match(TT.PROCEDURE) || this.match(TT.FUNCTION)) {
+            if (this.match(TT.PROCEDURE)) {
+                subroutines.push(this.proc_decl());
+            } else {
+                subroutines.push(this.func_decl());
+            }
+        }
         return subroutines;
     }
 
@@ -155,4 +168,35 @@ export class Parser {
         this.consume(TT.RPAR);
         return new Params(params);
     }
+
+    private compound_stmt(): Statement[] {
+        const statements: Statement[] = [];
+        this.consume(TT.BEGIN);
+        statements.append(this.statement());
+        while (this.match(TT.SEMICOL)) {
+            this.consume(TT.SEMICOL);
+            statements.append(this.statement);
+        }
+        this.consume(TT.END);
+        return statements;
+    }
+
+    private statement(): Statement {
+        if (this.match(TT.ID) || this.match(TT.READ) || this.match(TT.WRITE)) {
+            return this.simple_stmt();
+        } else {
+            return this.struct_stmt();
+        }
+    }
+
+    private simple_stmt(): Statement {
+        if (this.match(TT.ID)) {
+            const variable = this.variable();
+            if (this.match(TT.ASSIGN)) {
+                this.consume(TT.ASSIGN);
+                return new Assign(variable, this.expression());
+            }
+        }
+    }
+    */
 }

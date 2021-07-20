@@ -1,0 +1,4 @@
+program FILEMONMEUPAI;
+var 
+angola: real;
+.

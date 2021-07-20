@@ -1,7 +1,7 @@
 
 program : PROGRAM identifier ; block DOT
 
-block : var_decl_sect? sub_decl_sect? statement_sect?;
+block : var_decl_sect? sub_decl_sect? compound_stmt?;
 
 
 var_decl_sect : VAR var_decl SEMICOL ( var_decl SEMICOL)*;
@@ -33,9 +33,7 @@ formal_params : LPAR param_section? RPAR;
 param_section: var_decl (SEMICOL var_decl SEMICOL);
 
 
-stmt_sect : cmpnd_stmt;
-
-cmpnd_stmt: BEGIN statement (SEMICOL statement) END;
+compound_stmt: BEGIN statement (SEMICOL statement) END;
 
 statement : simple_stmt
           | struct_stmt
@@ -52,7 +50,7 @@ write_stmt : WRITE args;
 
 args: LPAR variable (COMMA variable)* RPAR
 
-struct_stmt: cmpnd_stmt
+struct_stmt: compound_stmt
            | if_stmt
            | while_stmt
            ;
