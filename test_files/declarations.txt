@@ -1,6 +1,16 @@
 program FILEMONMEUPAI;
 var 
 angola: real;
+ide: INTEGER;
 ide: integer;
 kole: char;
+kole: array [1..100] of char;
+FUNCTION teste(): integer;
+;
+function teste(): integer;
+;
+procedure teste();
+;
+PROCEDURE teste();
+;
 .

@@ -8,6 +8,7 @@ const main = () => {
     const src = readFileSync(filename).toString("utf-8");
     const parser = new Parser(src);
     let program = parser.parse();
+    program.inspect();
 };
 
 main();

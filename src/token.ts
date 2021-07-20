@@ -100,9 +100,9 @@ export class Token {
 
     public static fromID(lexeme: string, line: number, col: number): Token {
         let tType = TT.ID;
-        if (keywords.hasOwnProperty(lexeme)) {
+        if (keywords.hasOwnProperty(lexeme.toLowerCase())) {
             type type_index = keyof typeof keywords;
-            tType = keywords[lexeme as type_index];
+            tType = keywords[lexeme.toLowerCase() as type_index];
         }
         return new Token(tType, lexeme, line, col);
     }

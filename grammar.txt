@@ -20,8 +20,7 @@ index_range : integer_constant DOTDOT integer_constant;
 simple_type : char | integer | integer;
 
 
-sub_decl_sect : (proc_decl SEMICOL)*
-              | (func_decl SEMICOL)*
+sub_decl_sect : ((proc_decl | func_decl) SEMICOL)*
               ;
 
 proc_decl : PROCEDURE identifier formal_params SEMICOL block;

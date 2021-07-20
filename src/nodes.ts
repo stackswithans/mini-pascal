@@ -8,6 +8,8 @@ class Node {
         this.line = token.line;
         this.col = token.col;
     }
+
+    inspect() {}
 }
 
 export class Program extends Node {
@@ -19,6 +21,11 @@ export class Program extends Node {
         this.id = id;
         this.block = block;
     }
+
+    inspect() {
+        console.log("Program: " + this.id.lexeme + "\n");
+        this.block.inspect();
+    }
 }
 
 export class Block {
@@ -27,6 +34,12 @@ export class Block {
 
     pushInstructions(instructions: Node[]) {
         this.instructions = [...this.instructions, ...instructions];
+    }
+
+    inspect() {
+        for (let inst of this.instructions) {
+            inst.inspect();
+        }
     }
 }
 
@@ -37,30 +50,82 @@ export class Type extends Node {
         super(typeTok);
         this.typeTok = typeTok;
     }
+
+    string(): string {
+        return this.typeTok.lexeme;
+    }
 }
 
 export type ArrayRange = { start: Token; end: Token };
 
-export class ArrayType extends Node {
-    token: Token;
-    simpleType: Type;
+export class ArrayType extends Type {
     range: ArrayRange;
 
-    constructor(token: Token, range: ArrayRange, simpleType: Type) {
-        super(token);
-        this.token = token;
-        this.simpleType = simpleType;
+    constructor(typeTok: Token, range: ArrayRange) {
+        super(typeTok);
         this.range = range;
+    }
+
+    string(): string {
+        return `${super.string()}[]`;
     }
 }
 
 export class VarDecl extends Node {
     id: Token;
-    varType: ArrayType | Type;
+    varType: Type;
 
-    constructor(id: Token, varType: ArrayType | Type) {
+    constructor(id: Token, varType: Type) {
         super(id);
         this.id = id;
         this.varType = varType;
+    }
+
+    inspect() {
+        console.log(`Variable Declaration: 
+            identifier: ${this.id.lexeme}
+            type: ${this.varType.string()}
+        `);
+    }
+}
+
+export enum RoutineType {
+    FUNCTION = "Function",
+    PROCEDURE = "Procedure",
+}
+
+export class SubRoutine extends Node {
+    routineType: RoutineType;
+    name: Token;
+    formal_params: VarDecl[];
+    block: Block;
+    returnType: Type | null;
+
+    constructor(
+        routineType: RoutineType,
+        name: Token,
+        formal_params: VarDecl[],
+        block: Block,
+        returnType: Type | null
+    ) {
+        super(name);
+        this.routineType = routineType;
+        this.name = name;
+        this.formal_params = formal_params;
+        this.block = block;
+        this.returnType = returnType;
+    }
+
+    inspect() {
+        let returnType: string =
+            this.routineType === RoutineType.FUNCTION
+                ? this.returnType.string()
+                : "";
+
+        console.log(`${this.routineType}:
+                    Nome: ${this.name}
+                    Parâmetros: ${this.formal_params.length}
+                    Retorna: ${returnType}
+                    `);
     }
 }
