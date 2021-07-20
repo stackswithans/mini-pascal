@@ -1,15 +1,10 @@
 
 program : PROGRAM identifier ; block DOT
 
-block : var_decl_sect
-      | sub_decl_sect
-      | statement_sect
-      ;
+block : var_decl_sect? sub_decl_sect? statement_sect?;
 
 
-var_decl_sect : empty
-         | VAR var_decl SEMICOL ( var_decl SEMICOL)*
-         ;
+var_decl_sect : VAR var_decl SEMICOL ( var_decl SEMICOL)*;
 
 var_decl : identifier (COMMA identifier)* COLON type 
          ;
@@ -25,15 +20,15 @@ index_range : integer_constant DOTDOT integer_constant;
 simple_type : char | integer | integer;
 
 
-sub_decl_sect : proc_decl SEMICOL 
-              | func_decl
+sub_decl_sect : (proc_decl SEMICOL)*
+              | (func_decl SEMICOL)*
               ;
 
 proc_decl : PROCEDURE identifier formal_params SEMICOL block;
 
 func_decl : FUNCTION identifier formal_params COLON type SEMICOL block;
 
-formal_params : LPAR param_section RPAR; 
+formal_params : LPAR param_section? RPAR; 
 
 param_section: var_decl (SEMICOL var_decl SEMICOL);
 
