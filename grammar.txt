@@ -1,7 +1,7 @@
 
 program : PROGRAM identifier ; block DOT
 
-block : var_decl_sect? sub_decl_sect? compound_stmt?;
+block : var_decl_sect? sub_decl_sect? compound_stmt;
 
 
 var_decl_sect : VAR var_decl SEMICOL ( var_decl SEMICOL)*;
@@ -30,7 +30,7 @@ func_decl : FUNCTION identifier formal_params COLON type SEMICOL block;
 
 formal_params : LPAR param_section? RPAR; 
 
-param_section: var_decl (SEMICOL var_decl SEMICOL);
+param_section: var_decl (SEMICOL var_decl);
 
 
 compound_stmt: BEGIN statement (SEMICOL statement) END;

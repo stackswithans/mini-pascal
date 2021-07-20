@@ -70,6 +70,7 @@ const keywords = {
     procedure: TT.PROCEDURE,
     function: TT.FUNCTION,
     int: TT.INT,
+    integer: TT.INTEGER,
     char: TT.CHAR,
     boolean: TT.BOOLEAN,
     real: TT.REAL,

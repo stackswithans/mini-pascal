@@ -47,13 +47,12 @@ export class Parser {
         if (this.match(TT.VAR)) {
             block.pushInstructions(this.var_decl_sect());
         }
-        /*
-        if (this.match(TT.PROCEDURE) || this.match(TT.PROGRAM)) {
-            block.pushInstructions(this.sub_decl_sect());
+        if (this.match(TT.PROCEDURE) || this.match(TT.FUNCTION)) {
+            //block.pushInstructions(this.sub_decl_sect());
         }
-        if (this.match(TT.BEGIN)) {
-            block.pushInstructions(this.compound_stmt());
-        }*/
+        /*
+        block.pushInstructions(this.compound_stmt());
+        */
         return block;
     }
 

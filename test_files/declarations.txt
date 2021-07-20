@@ -1,4 +1,6 @@
 program FILEMONMEUPAI;
 var 
 angola: real;
+ide: integer;
+kole: char;
 .
