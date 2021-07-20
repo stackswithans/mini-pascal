@@ -5,12 +5,12 @@ ide: INTEGER;
 ide: integer;
 kole: char;
 kole: array [1..100] of char;
-FUNCTION teste(): integer;
+FUNCTION teste: integer;
 ;
-function teste(): integer;
+function teste(angola: real): integer;
 ;
-procedure teste();
+procedure teste;
 ;
-PROCEDURE teste();
+PROCEDURE teste(angola: integer; kenya: real);
 ;
 .

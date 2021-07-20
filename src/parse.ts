@@ -145,7 +145,10 @@ export class Parser {
     private proc_decl(): SubRoutine {
         this.consume(TT.PROCEDURE);
         let id = this.consume(TT.ID);
-        let formal_params = this.formal_params();
+        let formal_params: VarDecl[] = [];
+        if (this.match(TT.LPAR)) {
+            formal_params = this.formal_params();
+        }
         this.consume(TT.SEMICOL);
         let block = this.block();
         return new SubRoutine(
@@ -160,7 +163,10 @@ export class Parser {
     private func_decl(): SubRoutine {
         this.consume(TT.FUNCTION);
         let id = this.consume(TT.ID);
-        let formal_params = this.formal_params();
+        let formal_params: VarDecl[] = [];
+        if (this.match(TT.LPAR)) {
+            formal_params = this.formal_params();
+        }
         this.consume(TT.COLON);
         let returnType = this.sem_type();
         this.consume(TT.SEMICOL);
@@ -177,12 +183,10 @@ export class Parser {
     private formal_params(): VarDecl[] {
         let params: VarDecl[] = [];
         this.consume(TT.LPAR);
-        if (this.match(TT.ID)) {
+        params.push(this.var_decl());
+        while (this.match(TT.SEMICOL)) {
+            this.consume(TT.SEMICOL);
             params.push(this.var_decl());
-            while (this.match(TT.SEMICOL)) {
-                this.consume(TT.SEMICOL);
-                params.push(this.var_decl());
-            }
         }
         this.consume(TT.RPAR);
         return params;

@@ -123,7 +123,7 @@ export class SubRoutine extends Node {
                 : "";
 
         console.log(`${this.routineType}:
-                    Nome: ${this.name}
+                    Nome: ${this.name.lexeme}
                     Parâmetros: ${this.formal_params.length}
                     Retorna: ${returnType}
                     `);
