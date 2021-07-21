@@ -38,16 +38,18 @@ statement : simple_stmt
           | struct_stmt
           ;
 
-simple_stmt : variable (ASSIGN expression)? 
+simple_stmt : variable (ASSIGN expression | formal_args)? 
             | read_stmt 
             | write_stmt
             ;
 
-read_stmt : READ args;
+formal_args : LPAR expression (, expression)* RPAR
 
-write_stmt : WRITE args;
+read_stmt : READ io_args;
 
-args: LPAR variable (COMMA variable)* RPAR
+write_stmt : WRITE io_args;
+
+io_args: LPAR variable (COMMA variable)* RPAR
 
 struct_stmt: compound_stmt
            | if_stmt
@@ -64,7 +66,7 @@ simple_expression : (sign)? term (adding_op term)* ;
 
 term : factor (mult_op factor)*;
 
-factor : variable | constant | LPAR expression RPAR | NOT factor;
+factor : var_expr | INTEGER | CHAR | LPAR expression RPAR | NOT factor;
 
 rel_op : EQ 
        | NOTEQ 
@@ -85,4 +87,6 @@ mult_op: MULOP
        | SLASH
        ;
 
-variable : identifier (LPAR [expression] RPAR)?;
+variable : identifier (LBRACK expression RBRACK)?;
+
+var_expr : identifier (LBRACK expression RBRACK | LPAR formal_args RPAR)?;

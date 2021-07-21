@@ -1,12 +1,14 @@
-import { Token, TT } from "./token";
+import { Token } from "./token";
 
 class Node {
+    token: Token;
     line: number;
     col: number;
 
     constructor(token: Token) {
         this.line = token.line;
         this.col = token.col;
+        this.token = token;
     }
 
     inspect() {}
@@ -30,7 +32,6 @@ export class Program extends Node {
 
 export class Block {
     instructions: Node[] = [];
-    constructor() {}
 
     pushInstructions(instructions: Node[]) {
         this.instructions = [...this.instructions, ...instructions];
@@ -119,7 +120,7 @@ export class SubRoutine extends Node {
     inspect() {
         let returnType: string =
             this.routineType === RoutineType.FUNCTION
-                ? this.returnType.string()
+                ? (this.returnType as Type).string()
                 : "";
 
         console.log(`${this.routineType}:
@@ -127,5 +128,52 @@ export class SubRoutine extends Node {
                     Parâmetros: ${this.formal_params.length}
                     Retorna: ${returnType}
                     `);
+    }
+}
+
+export enum StmtType {
+    IOSTMT,
+    ASSIGN,
+    CALL,
+}
+
+export class Expression {}
+
+export type Variable = { id: Token; index?: Expression };
+export type IOStmt = { ioStmt: Token; args: Variable[] };
+export type Assign = { target: Variable; expr: Expression };
+export type Call = { callee: Variable; args: Expression[] };
+export type StmtMeta = Variable | IOStmt | Assign | Call;
+
+export class Statement extends Node {
+    stmtType: StmtType;
+    meta: StmtMeta;
+
+    constructor(stmtType: StmtType, token: Token, meta: StmtMeta) {
+        super(token);
+        this.stmtType = stmtType;
+        this.meta = meta;
+    }
+
+    inspect() {
+        let message: string;
+        switch (this.stmtType) {
+            case StmtType.IOSTMT:
+                let ioData = this.meta as IOStmt;
+                message = `Statement:
+                ${ioData.ioStmt.token}`;
+                break;
+            case StmtType.ASSIGN:
+                let { target, expr } = this.meta as Assign;
+                message = `Statement:
+                ${target.id.lexeme}`;
+                break;
+            case StmtType.CALL:
+                let { callee } = this.meta as Call;
+                message = `Statement:
+                ${callee.id.lexeme}`;
+                break;
+        }
+        console.log(message);
     }
 }

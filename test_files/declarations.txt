@@ -5,12 +5,31 @@ ide: INTEGER;
 ide: integer;
 kole: char;
 kole: array [1..100] of char;
+
 FUNCTION teste: integer;
+BEGIN
+    write(kole)
+END
 ;
+
 function teste(angola: real): integer;
+BEGIN
+    read(angola)
+END
 ;
+
 procedure teste;
+BEGIN
+    teste1
+END
 ;
+
 PROCEDURE teste(angola: integer; kenya: real);
+BEGIN
+    teste;
+END
 ;
+BEGIN
+    teste
+END
 .
