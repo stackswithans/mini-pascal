@@ -139,10 +139,26 @@ export enum StmtType {
 
 export class Expression {}
 
-export type Variable = { id: Token; index?: Expression };
-export type IOStmt = { ioStmt: Token; args: Variable[] };
-export type Assign = { target: Variable; expr: Expression };
-export type Call = { callee: Variable; args: Expression[] };
+export interface Variable {
+    id: Token;
+    index?: Expression;
+}
+
+export interface IOStmt {
+    ioStmt: Token;
+    args: Variable[];
+}
+
+export interface Assign {
+    target: Variable;
+    expr: Expression;
+}
+
+export interface Call {
+    callee: Variable;
+    args: Expression[];
+}
+
 export type StmtMeta = Variable | IOStmt | Assign | Call;
 
 export class Statement extends Node {
