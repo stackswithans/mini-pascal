@@ -1,6 +1,7 @@
 import { Token, TT } from "./token";
 
 enum LexState {
+    INITIAL,
     ARITHOP,
     LOGICALOP,
     DELIMETER,
@@ -17,12 +18,12 @@ const literals = {
 };
 
 export const isDigit = (char: string) => {
-    let code = char.codePointAt(0);
+    let code = char.codePointAt(0) as number;
     return code >= 48 && code <= 57;
 };
 
 export const isLetter = (char: string) => {
-    let code = char.codePointAt(0);
+    let code = char.codePointAt(0) as number;
     return (code >= 97 && code <= 122) || (code >= 65 && code <= 90);
 };
 
@@ -31,7 +32,7 @@ export class Lexer {
     private fLine: number;
     private fCol: number;
     private cursor: number; //Points to the current char
-    private state: LexState;
+    private state: LexState = LexState.INITIAL;
 
     public constructor(program: string) {
         this.program = program;
@@ -104,6 +105,7 @@ export class Lexer {
 
     public nextToken(): Token {
         let token: Token;
+        token = new Token(TT.EOF, "", -1, -1);
         let char = this.getChar();
         switch (this.state) {
             case LexState.ARITHOP:

@@ -1,8 +1,21 @@
 import { Lexer } from "./lex";
 import { Token, TT } from "./token";
-import * as ast from "./nodes";
+import * as ast from "./ast";
 
 type ParseError = { message: string; line: number; col: number };
+
+function newNode<T extends ast.NodeData>(
+    token: Token,
+    nodeKind: ast.NodeKind,
+    data: T
+) {
+    return {
+        line: token.line,
+        col: token.col,
+        nodeKind,
+        data,
+    };
+}
 
 export class Parser {
     private lookahead: Token;
@@ -14,6 +27,7 @@ export class Parser {
         this.lookahead = this.lexer.nextToken();
     }
 
+    //TODO: Improve error handling
     private throwError(message: string, context: Token) {
         const errMsg = `Erro sintático\
                       (${context.line}:${context.col}):\
@@ -38,38 +52,39 @@ export class Parser {
         return this.lookahead.token === tokenT;
     }
 
-    public parse(): ast.Program {
+    public parse(): ast.Node<ast.Program> {
         return this.program();
     }
 
-    private program(): ast.Program {
+    private program(): ast.Node<ast.Program> {
         this.consume(TT.PROGRAM);
         let id = this.consume(TT.ID);
         this.consume(TT.SEMICOL);
         let block = this.block();
         this.consume(TT.DOT);
-        return new ast.Program(id, block);
+        return newNode(id, ast.NodeKind.Program, { id, block });
     }
 
     private block(): ast.Block {
-        let block = new ast.Block();
+        let declarations = [];
         if (this.match(TT.VAR)) {
-            block.pushInstructions(this.var_decl_sect());
+            declarations.push(...this.var_decl_sect());
         }
         if (this.match(TT.PROCEDURE) || this.match(TT.FUNCTION)) {
-            block.pushInstructions(this.sub_decl_sect());
+            declarations.push(...this.sub_decl_sect());
         }
-        block.pushInstructions(this.compound_stmt());
-        return block;
+        let statements = this.compound_stmt();
+        return { declarations, statements };
     }
 
-    private var_decl_sect(): ast.VarDecl[] {
-        let declarations = [];
+    private var_decl_sect(): ast.Node<ast.VarDecl>[] {
         this.consume(TT.VAR);
-        declarations.push(this.var_decl());
+        let decl = this.var_decl();
+        let declarations = [newNode(decl.id, ast.NodeKind.VarDecl, decl)];
         this.consume(TT.SEMICOL);
         while (this.match(TT.ID)) {
-            declarations.push(this.var_decl());
+            let decl = this.var_decl();
+            declarations.push(newNode(decl.id, ast.NodeKind.VarDecl, decl));
             this.consume(TT.SEMICOL);
         }
         return declarations;
@@ -78,31 +93,40 @@ export class Parser {
     private var_decl(): ast.VarDecl {
         let id = this.consume(TT.ID);
         this.consume(TT.COLON);
-        let sem_type = this.sem_type();
-        return new ast.VarDecl(id, sem_type);
+        let varType = this.sem_type();
+        return { id, varType };
     }
 
-    private sem_type(): ast.Type {
+    private sem_type(): ast.Node<ast.Type> {
         if (
             this.match(TT.CHAR) ||
             this.match(TT.INTEGER) ||
             this.match(TT.REAL)
         ) {
-            return new ast.Type(this.simple_type());
+            let typeTok = this.simple_type();
+            return newNode(typeTok, ast.NodeKind.Type, {
+                typeTok,
+                isArray: false,
+            });
         }
         let tok = this.consume(TT.ARRAY);
         this.consume(TT.LBRACK);
         let range = this.index_range();
         this.consume(TT.RBRACK);
         this.consume(TT.OF);
-        return new ast.ArrayType(this.simple_type(), range);
+        let typeTok = this.simple_type();
+        return newNode(tok, ast.NodeKind.Type, {
+            typeTok,
+            isArray: true,
+            range,
+        });
     }
 
-    private index_range(): ast.ArrayRange {
+    private index_range(): ast.Node<ast.ArrayRange> {
         let start = this.consume(TT.INT);
         this.consume(TT.DOTDOT);
         let end = this.consume(TT.INT);
-        return { start, end };
+        return newNode(start, ast.NodeKind.ArrayRange, { start, end });
     }
 
     private simple_type(): Token {
@@ -118,13 +142,19 @@ export class Parser {
                 return this.lookahead;
         }
     }
-    private sub_decl_sect(): ast.SubRoutine[] {
-        let subroutines: ast.SubRoutine[] = [];
+    private sub_decl_sect(): ast.Node<ast.SubRoutine>[] {
+        let subroutines = [];
         while (this.match(TT.PROCEDURE) || this.match(TT.FUNCTION)) {
             if (this.match(TT.PROCEDURE)) {
-                subroutines.push(this.proc_decl());
+                let routine = this.proc_decl();
+                subroutines.push(
+                    newNode(routine.name, ast.NodeKind.SubRoutine, routine)
+                );
             } else {
-                subroutines.push(this.func_decl());
+                let routine = this.func_decl();
+                subroutines.push(
+                    newNode(routine.name, ast.NodeKind.SubRoutine, routine)
+                );
             }
             this.consume(TT.SEMICOL);
         }
@@ -134,25 +164,25 @@ export class Parser {
     private proc_decl(): ast.SubRoutine {
         this.consume(TT.PROCEDURE);
         let id = this.consume(TT.ID);
-        let formal_params: ast.VarDecl[] = [];
+        let formal_params: ast.Node<ast.VarDecl>[] = [];
         if (this.match(TT.LPAR)) {
             formal_params = this.formal_params();
         }
         this.consume(TT.SEMICOL);
         let block = this.block();
-        return new ast.SubRoutine(
-            ast.RoutineType.PROCEDURE,
-            id,
+        return {
+            routineType: ast.RoutineType.PROCEDURE,
+            name: id,
             formal_params,
             block,
-            null
-        );
+            returnType: null,
+        };
     }
 
     private func_decl(): ast.SubRoutine {
         this.consume(TT.FUNCTION);
         let id = this.consume(TT.ID);
-        let formal_params: ast.VarDecl[] = [];
+        let formal_params: ast.Node<ast.VarDecl>[] = [];
         if (this.match(TT.LPAR)) {
             formal_params = this.formal_params();
         }
@@ -160,29 +190,31 @@ export class Parser {
         let returnType = this.sem_type();
         this.consume(TT.SEMICOL);
         let block = this.block();
-        return new ast.SubRoutine(
-            ast.RoutineType.FUNCTION,
-            id,
+        return {
+            routineType: ast.RoutineType.PROCEDURE,
+            name: id,
             formal_params,
             block,
-            returnType
-        );
+            returnType,
+        };
     }
 
-    private formal_params(): ast.VarDecl[] {
-        let params: ast.VarDecl[] = [];
+    private formal_params(): ast.Node<ast.VarDecl>[] {
+        let params = [];
         this.consume(TT.LPAR);
-        params.push(this.var_decl());
+        let decl = this.var_decl();
+        params.push(newNode(decl.id, ast.NodeKind.VarDecl, decl));
         while (this.match(TT.SEMICOL)) {
             this.consume(TT.SEMICOL);
-            params.push(this.var_decl());
+            let decl = this.var_decl();
+            params.push(newNode(decl.id, ast.NodeKind.VarDecl, decl));
         }
         this.consume(TT.RPAR);
         return params;
     }
 
-    private compound_stmt(): ast.Statement[] {
-        const statements: ast.Statement[] = [];
+    private compound_stmt(): ast.Node<ast.Statement>[] {
+        const statements = [];
         this.consume(TT.BEGIN);
         statements.push(this.statement());
         while (this.match(TT.SEMICOL)) {
@@ -193,7 +225,7 @@ export class Parser {
         return statements;
     }
 
-    private statement(): ast.Statement {
+    private statement(): ast.Node<ast.Statement> {
         if (this.match(TT.ID) || this.match(TT.READ) || this.match(TT.WRITE)) {
             return this.simple_stmt();
         } else {
@@ -201,12 +233,18 @@ export class Parser {
         }
     }
 
-    private simple_stmt(): ast.Statement {
+    private simple_stmt(): ast.Node<ast.Statement> {
         if (this.match(TT.ID)) {
-            const target = this.variable();
+            let variable = this.variable();
+            const target = newNode(
+                variable.id,
+                ast.NodeKind.Variable,
+                variable
+            );
+
             if (this.match(TT.ASSIGN)) {
                 let token = this.consume(TT.ASSIGN);
-                return new ast.Statement(ast.StmtType.ASSIGN, token, {
+                return newNode(token, ast.NodeKind.Assign, {
                     target,
                     expr: this.expression(),
                 });
@@ -214,50 +252,47 @@ export class Parser {
                 if ("index" in target) {
                     this.throwError(
                         "Este identificador não é invocável",
-                        target.id
+                        variable.id
                     );
                 }
                 this.consume(TT.LPAR);
                 const args = this.formal_args();
                 this.consume(TT.RPAR);
-                return new ast.Statement(ast.StmtType.CALL, target.id, {
+                return newNode(variable.id, ast.NodeKind.Call, {
                     callee: target,
                     args,
                 });
             } else {
-                return new ast.Statement(ast.StmtType.CALL, target.id, {
-                    callee: target,
-                    args: [],
-                });
+                return target;
             }
         } else if (this.match(TT.READ) || this.match(TT.WRITE)) {
             let ioStmt: Token = this.consume(this.lookahead.token);
-            let args: ast.Variable[] = this.io_args();
-            return new ast.Statement(ast.StmtType.IOSTMT, ioStmt, {
+            let args = this.io_args();
+            return newNode(ioStmt, ast.NodeKind.IOStmt, {
                 ioStmt,
                 args,
             });
         } else {
             this.throwError("Início de instrução inválido", this.lookahead);
-            return new ast.Statement(ast.StmtType.IOSTMT, this.lookahead, {
-                id: this.lookahead,
-            });
+            return [] as any;
         }
     }
 
-    private struct_stmt(): ast.Statement {
-        return new ast.Statement(ast.StmtType.CALL, this.lookahead, {
-            id: this.lookahead,
-        });
+    private struct_stmt(): any {
+        return;
     }
 
-    private io_args(): ast.Variable[] {
-        const variables: ast.Variable[] = [];
+    private io_args(): ast.Node<ast.Variable>[] {
+        const variables = [];
         this.consume(TT.LPAR);
-        variables.push(this.variable());
+        let variable = this.variable();
+        variables.push(newNode(variable.id, ast.NodeKind.Variable, variable));
         while (this.match(TT.COMMA)) {
             this.consume(TT.COMMA);
-            variables.push(this.variable());
+            let variable = this.variable();
+            variables.push(
+                newNode(variable.id, ast.NodeKind.Variable, variable)
+            );
         }
         this.consume(TT.RPAR);
         return variables;
@@ -273,11 +308,101 @@ export class Parser {
         return { id, index };
     }
 
-    private formal_args(): ast.Expression[] {
+    private formal_args(): any {
         return [];
     }
 
-    private expression(): ast.Expression {
-        return new ast.Expression();
+    private expression(): ast.Node<ast.Expression> {
+        let lhs = this.simple_expr();
+        while (
+            this.match(TT.GREATER) ||
+            this.match(TT.GREATEREQ) ||
+            this.match(TT.LESS) ||
+            this.match(TT.LESSEQ)
+        ) {
+            let op = this.consume(this.lookahead.token);
+            let rhs = this.simple_expr();
+            lhs = newNode(op, ast.NodeKind.BinOp, { lhs, op, rhs });
+        }
+
+        return lhs;
+    }
+
+    private simple_expr(): ast.Node<ast.Expression> {
+        let sign: Token | null = null;
+        if (this.match(TT.ADDOP) || this.match(TT.SUBOP)) {
+            sign = this.consume(this.lookahead.token);
+        }
+        let lhs =
+            sign === null
+                ? this.term()
+                : newNode(sign, ast.NodeKind.UnaryOp, {
+                      op: sign,
+                      operand: this.term(),
+                  });
+        while (this.match(TT.ADDOP) || this.match(TT.SUBOP)) {
+            let op = this.consume(this.lookahead.token);
+            let rhs = this.simple_expr();
+            lhs = newNode(op, ast.NodeKind.BinOp, { op, lhs, rhs });
+        }
+        return lhs;
+    }
+
+    private term(): ast.Node<ast.Expression> {
+        let lhs = this.factor();
+        while (
+            this.match(TT.DIV) ||
+            this.match(TT.MULOP) ||
+            this.match(TT.DIVOP)
+        ) {
+            let op = this.consume(this.lookahead.token);
+            let rhs = this.term();
+            lhs = newNode(op, ast.NodeKind.BinOp, { op, lhs, rhs });
+        }
+        return lhs;
+    }
+
+    private factor(): ast.Node<ast.Expression> {
+        switch (this.lookahead.token) {
+            case TT.ID: {
+                let id = this.consume(TT.ID);
+                if (this.match(TT.LBRACK)) {
+                    this.consume(TT.LBRACK);
+                    let index = this.expression();
+                    return newNode(id, ast.NodeKind.Variable, { id, index });
+                } else if (this.match(TT.LPAR)) {
+                    let args = this.formal_args();
+                    return newNode(id, ast.NodeKind.Call, {
+                        callee: newNode(id, ast.NodeKind.Variable, { id }),
+                        args,
+                    });
+                }
+                return newNode(id, ast.NodeKind.Variable, { id });
+            }
+            case TT.INTEGER:
+            case TT.CHAR:
+            case TT.STRING: {
+                let tok = this.consume(this.lookahead.token);
+                return newNode(tok, ast.NodeKind.Literal, {
+                    tokType: tok.token,
+                    value: tok.lexeme,
+                });
+            }
+            case TT.LPAR: {
+                this.consume(TT.LPAR);
+                let expr = this.expression();
+                this.consume(TT.RPAR);
+                return expr;
+            }
+            case TT.NOT: {
+                let negation = {
+                    op: this.consume(TT.NOT),
+                    operand: this.factor(),
+                };
+                return newNode(negation.op, ast.NodeKind.UnaryOp, negation);
+            }
+            default:
+                throw new Error("Início inválido de expressão");
+        }
     }
 }

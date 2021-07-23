@@ -1,15 +1,30 @@
-import { Token } from "./token";
+import { Token, TT } from "./token";
 
-enum NodeKind {
+export enum NodeKind {
     Program,
     Block,
     VarDecl,
+    Type,
+    ArrayRange,
     SubRoutine,
-    Statement,
-    Expression,
+    Call,
+    Assign,
+    IOStmt,
+    Variable,
+    BinOp,
+    UnaryOp,
+    Literal,
 }
 
-type NodeData = Program | Block | VarDecl | SubRoutine | Statement | Expression;
+export type NodeData =
+    | Program
+    | Block
+    | VarDecl
+    | SubRoutine
+    | ArrayRange
+    | Statement
+    | Type
+    | Expression;
 
 export interface Node<T extends NodeData> {
     nodeKind: NodeKind;
@@ -20,7 +35,7 @@ export interface Node<T extends NodeData> {
 
 export interface Program {
     id: Token;
-    block: Node<Block>;
+    block: Block;
 }
 
 export interface Block {
@@ -50,17 +65,9 @@ export interface SubRoutine {
     routineType: RoutineType;
     name: Token;
     formal_params: Node<VarDecl>[];
-    block: Node<Block>;
+    block: Block;
     returnType: Node<Type> | null;
 }
-
-export enum StmtType {
-    IOSTMT,
-    ASSIGN,
-    CALL,
-}
-
-export interface Expression {}
 
 export interface Variable {
     id: Token;
@@ -82,21 +89,49 @@ export interface Call {
     args: Node<Expression>[];
 }
 
-export type StmtMeta = Variable | IOStmt | Assign | Call;
+export type Statement = Variable | IOStmt | Assign | Call;
 
-export interface Statement {
-    stmtType: StmtType;
-    meta: Node<StmtMeta>;
+export type Expression = BinOp | UnaryOp | Variable | Call | Literal;
+
+export interface BinOp {
+    lhs: Node<Expression>;
+    rhs: Node<Expression>;
+    op: Token;
+}
+
+export interface UnaryOp {
+    op: Token;
+    operand: Node<Expression>;
+}
+
+export interface Literal {
+    tokType: TT;
+    value: string;
 }
 
 export function inspect<T extends NodeData>(node: Node<T>) {
     const stringifyType = (typeNode: Node<Type>) =>
         typeNode.data.isArray ? "[]" : "";
+
+    const inspectBlock = (block: Block) => {
+        let { declarations, statements } = block;
+        for (let decl of declarations) {
+            if (decl.nodeKind === NodeKind.VarDecl) {
+                inspect(decl as Node<VarDecl>);
+            } else {
+                inspect(decl as Node<SubRoutine>);
+            }
+        }
+        for (let stmt of statements) {
+            inspect(stmt);
+        }
+    };
+
     switch (node.nodeKind) {
         case NodeKind.Program: {
             let { id, block } = node.data as Program;
             console.log("Program: " + id.lexeme + "\n");
-            inspect(block);
+            inspectBlock(block);
             break;
         }
         case NodeKind.Block: {
@@ -140,26 +175,24 @@ export function inspect<T extends NodeData>(node: Node<T>) {
                         `);
             break;
         }
-        case NodeKind.Statement: {
-            let { stmtType, meta } = node.data as Statement;
-            let message: string;
-            switch (stmtType) {
-                case StmtType.IOSTMT:
-                    let ioData = meta.data as IOStmt;
-                    message = `Statement:
-                    ${ioData.ioStmt.token}`;
-                    break;
-                case StmtType.ASSIGN:
-                    let { target } = meta.data as Assign;
-                    message = `Statement:
-                    ${target.data.id.lexeme}`;
-                    break;
-                case StmtType.CALL:
-                    let { callee } = meta.data as Call;
-                    message = `Statement:
-                    ${callee.data.id.lexeme}`;
-                    break;
-            }
+        case NodeKind.IOStmt: {
+            let ioData = node.data as IOStmt;
+            let message = `Statement:
+            ${ioData.ioStmt.token}`;
+            console.log(message);
+            break;
+        }
+        case NodeKind.Assign: {
+            let { target } = node.data as Assign;
+            let message = `Statement:
+            ${target.data.id.lexeme}`;
+            console.log(message);
+            break;
+        }
+        case NodeKind.Call: {
+            let { callee } = node.data as Call;
+            let message = `Statement:
+            ${callee.data.id.lexeme}`;
             console.log(message);
             break;
         }

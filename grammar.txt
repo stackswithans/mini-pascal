@@ -66,7 +66,7 @@ simple_expression : (sign)? term (adding_op term)* ;
 
 term : factor (mult_op factor)*;
 
-factor : var_expr | INTEGER | CHAR | LPAR expression RPAR | NOT factor;
+factor : var_expr | INTEGER | STRING | LPAR expression RPAR | NOT factor;
 
 rel_op : EQ 
        | NOTEQ 
