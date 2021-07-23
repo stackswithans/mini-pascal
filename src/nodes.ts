@@ -1,93 +1,44 @@
 import { Token } from "./token";
 
-class Node {
-    token: Token;
+enum NodeKind {
+    Program,
+    Block,
+    VarDecl,
+    SubRoutine,
+    Statement,
+    Expression,
+}
+
+type NodeData = Program | Block | VarDecl | SubRoutine | Statement | Expression;
+
+export interface Node<T extends NodeData> {
+    nodeKind: NodeKind;
     line: number;
     col: number;
-
-    constructor(token: Token) {
-        this.line = token.line;
-        this.col = token.col;
-        this.token = token;
-    }
-
-    inspect() {}
+    data: T;
 }
 
-export class Program extends Node {
+export interface Program {
     id: Token;
-    block: Block;
-
-    constructor(id: Token, block: Block) {
-        super(id);
-        this.id = id;
-        this.block = block;
-    }
-
-    inspect() {
-        console.log("Program: " + this.id.lexeme + "\n");
-        this.block.inspect();
-    }
+    block: Node<Block>;
 }
 
-export class Block {
-    instructions: Node[] = [];
-
-    pushInstructions(instructions: Node[]) {
-        this.instructions = [...this.instructions, ...instructions];
-    }
-
-    inspect() {
-        for (let inst of this.instructions) {
-            inst.inspect();
-        }
-    }
-}
-
-export class Type extends Node {
-    typeTok: Token;
-
-    constructor(typeTok: Token) {
-        super(typeTok);
-        this.typeTok = typeTok;
-    }
-
-    string(): string {
-        return this.typeTok.lexeme;
-    }
+export interface Block {
+    declarations: Array<Node<VarDecl> | Node<SubRoutine>>;
+    statements: Node<Statement>[];
 }
 
 export type ArrayRange = { start: Token; end: Token };
 
-export class ArrayType extends Type {
-    range: ArrayRange;
-
-    constructor(typeTok: Token, range: ArrayRange) {
-        super(typeTok);
-        this.range = range;
-    }
-
-    string(): string {
-        return `${super.string()}[]`;
-    }
+export interface Type {
+    typeTok: Token;
+    isArray: boolean;
+    range?: Node<ArrayRange>;
 }
 
-export class VarDecl extends Node {
+export interface VarDecl {
     id: Token;
-    varType: Type;
-
-    constructor(id: Token, varType: Type) {
-        super(id);
-        this.id = id;
-        this.varType = varType;
-    }
-
-    inspect() {
-        console.log(`Variable Declaration: 
-            identifier: ${this.id.lexeme}
-            type: ${this.varType.string()}
-        `);
-    }
+    varType: Node<Type>;
 }
 
 export enum RoutineType {
@@ -95,40 +46,12 @@ export enum RoutineType {
     PROCEDURE = "Procedure",
 }
 
-export class SubRoutine extends Node {
+export interface SubRoutine {
     routineType: RoutineType;
     name: Token;
-    formal_params: VarDecl[];
-    block: Block;
-    returnType: Type | null;
-
-    constructor(
-        routineType: RoutineType,
-        name: Token,
-        formal_params: VarDecl[],
-        block: Block,
-        returnType: Type | null
-    ) {
-        super(name);
-        this.routineType = routineType;
-        this.name = name;
-        this.formal_params = formal_params;
-        this.block = block;
-        this.returnType = returnType;
-    }
-
-    inspect() {
-        let returnType: string =
-            this.routineType === RoutineType.FUNCTION
-                ? (this.returnType as Type).string()
-                : "";
-
-        console.log(`${this.routineType}:
-                    Nome: ${this.name.lexeme}
-                    Parâmetros: ${this.formal_params.length}
-                    Retorna: ${returnType}
-                    `);
-    }
+    formal_params: Node<VarDecl>[];
+    block: Node<Block>;
+    returnType: Node<Type> | null;
 }
 
 export enum StmtType {
@@ -137,59 +60,108 @@ export enum StmtType {
     CALL,
 }
 
-export class Expression {}
+export interface Expression {}
 
 export interface Variable {
     id: Token;
-    index?: Expression;
+    index?: Node<Expression>;
 }
 
 export interface IOStmt {
     ioStmt: Token;
-    args: Variable[];
+    args: Node<Variable>[];
 }
 
 export interface Assign {
-    target: Variable;
-    expr: Expression;
+    target: Node<Variable>;
+    expr: Node<Expression>;
 }
 
 export interface Call {
-    callee: Variable;
-    args: Expression[];
+    callee: Node<Variable>;
+    args: Node<Expression>[];
 }
 
 export type StmtMeta = Variable | IOStmt | Assign | Call;
 
-export class Statement extends Node {
+export interface Statement {
     stmtType: StmtType;
-    meta: StmtMeta;
+    meta: Node<StmtMeta>;
+}
 
-    constructor(stmtType: StmtType, token: Token, meta: StmtMeta) {
-        super(token);
-        this.stmtType = stmtType;
-        this.meta = meta;
-    }
-
-    inspect() {
-        let message: string;
-        switch (this.stmtType) {
-            case StmtType.IOSTMT:
-                let ioData = this.meta as IOStmt;
-                message = `Statement:
-                ${ioData.ioStmt.token}`;
-                break;
-            case StmtType.ASSIGN:
-                let { target, expr } = this.meta as Assign;
-                message = `Statement:
-                ${target.id.lexeme}`;
-                break;
-            case StmtType.CALL:
-                let { callee } = this.meta as Call;
-                message = `Statement:
-                ${callee.id.lexeme}`;
-                break;
+export function inspect<T extends NodeData>(node: Node<T>) {
+    const stringifyType = (typeNode: Node<Type>) =>
+        typeNode.data.isArray ? "[]" : "";
+    switch (node.nodeKind) {
+        case NodeKind.Program: {
+            let { id, block } = node.data as Program;
+            console.log("Program: " + id.lexeme + "\n");
+            inspect(block);
+            break;
         }
-        console.log(message);
+        case NodeKind.Block: {
+            let { declarations, statements } = node.data as Block;
+            for (let decl of declarations) {
+                if (decl.nodeKind === NodeKind.VarDecl) {
+                    inspect(decl as Node<VarDecl>);
+                } else {
+                    inspect(decl as Node<SubRoutine>);
+                }
+            }
+            for (let stmt of statements) {
+                inspect(stmt);
+            }
+            break;
+        }
+        case NodeKind.VarDecl: {
+            let { id, varType } = node.data as VarDecl;
+            console.log(`Variable Declaration: 
+                identifier: ${id.lexeme}
+                type: ${varType.data.typeTok.lexeme} ${stringifyType(varType)}
+            `);
+            break;
+        }
+        case NodeKind.SubRoutine: {
+            let {
+                returnType,
+                routineType,
+                name,
+                formal_params,
+            } = node.data as SubRoutine;
+            let returns: string =
+                routineType === RoutineType.FUNCTION
+                    ? stringifyType(returnType as Node<Type>)
+                    : "";
+
+            console.log(`${routineType}:
+                        Nome: ${name.lexeme}
+                        Parâmetros: ${formal_params.length}
+                        Retorna: ${returns}
+                        `);
+            break;
+        }
+        case NodeKind.Statement: {
+            let { stmtType, meta } = node.data as Statement;
+            let message: string;
+            switch (stmtType) {
+                case StmtType.IOSTMT:
+                    let ioData = meta.data as IOStmt;
+                    message = `Statement:
+                    ${ioData.ioStmt.token}`;
+                    break;
+                case StmtType.ASSIGN:
+                    let { target } = meta.data as Assign;
+                    message = `Statement:
+                    ${target.data.id.lexeme}`;
+                    break;
+                case StmtType.CALL:
+                    let { callee } = meta.data as Call;
+                    message = `Statement:
+                    ${callee.data.id.lexeme}`;
+                    break;
+            }
+            console.log(message);
+            break;
+        }
     }
 }
