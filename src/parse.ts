@@ -2,7 +2,13 @@ import { Lexer } from "./lex";
 import { Token, TT } from "./token";
 import * as ast from "./ast";
 
-type ParseError = { message: string; line: number; col: number };
+export type ParseError = { message: string; line: number; col: number };
+
+enum ParseSection {
+    VarDecl,
+    SubRDecl,
+    Stmt,
+}
 
 function newNode<T extends ast.NodeData>(
     token: Token,
@@ -17,6 +23,8 @@ function newNode<T extends ast.NodeData>(
     };
 }
 
+const typeError = "Esperava-se um tipo de dados: char, int, real";
+
 export class Parser {
     private lookahead: Token;
     private lexer: Lexer;
@@ -27,21 +35,30 @@ export class Parser {
         this.lookahead = this.lexer.nextToken();
     }
 
-    //TODO: Improve error handling
     private throwError(message: string, context: Token) {
-        const errMsg = `Erro sintático\
-                      (${context.line}:${context.col}):\
-                      ${message}`;
+        const errMsg = `Erro sintático: (${context.line}:${context.col}): ${message}`;
         console.error(errMsg);
-        throw new Error(errMsg);
+        let error = {
+            message: errMsg,
+            line: context.line,
+            col: context.col,
+        };
+        this.errors.push(error);
+        throw error;
     }
 
-    private consume(tokenT: TT): Token {
+    private consume(
+        tokenT: TT,
+        message: string = "",
+        context: Token | null = null
+    ): Token {
         if (!(this.lookahead.token === tokenT)) {
-            this.throwError(
-                `Expected ${tokenT} but got ${this.lookahead.token}`,
-                this.lookahead
-            );
+            let errMsg =
+                message !== ""
+                    ? message
+                    : `Expected ${tokenT} but got ${this.lookahead.token}`;
+            let errContext = context === null ? this.lookahead : context;
+            this.throwError(errMsg, errContext);
         }
         let old = this.lookahead;
         this.lookahead = this.lexer.nextToken();
@@ -52,8 +69,65 @@ export class Parser {
         return this.lookahead.token === tokenT;
     }
 
-    public parse(): ast.Node<ast.Program> {
-        return this.program();
+    private sychronize(section: ParseSection): boolean {
+        while (!this.match(TT.EOF)) {
+            switch (section) {
+                case ParseSection.VarDecl:
+                    if (
+                        this.match(TT.PROCEDURE) ||
+                        this.match(TT.FUNCTION) ||
+                        this.match(TT.BEGIN)
+                    ) {
+                        return false;
+                    } else if (this.match(TT.SEMICOL)) {
+                        this.consume(TT.SEMICOL);
+                        return this.match(TT.ID) ? true : false;
+                    }
+                    this.consume(this.lookahead.token);
+                    continue;
+                case ParseSection.SubRDecl:
+                    if (this.match(TT.PROCEDURE) || this.match(TT.FUNCTION)) {
+                        return true;
+                    } else if (this.match(TT.SEMICOL)) {
+                        this.consume(TT.SEMICOL);
+                        let retry =
+                            this.match(TT.PROCEDURE) || this.match(TT.FUNCTION);
+                        return retry ? true : false;
+                    }
+                    this.consume(this.lookahead.token);
+                    continue;
+                case ParseSection.Stmt:
+                    if (
+                        this.match(TT.READ) ||
+                        this.match(TT.WRITE) ||
+                        this.match(TT.ID) ||
+                        this.match(TT.SEMICOL)
+                    ) {
+                        return true;
+                    }
+                    this.consume(this.lookahead.token);
+                    continue;
+            }
+        }
+        return false;
+    }
+
+    private callOrSync<T extends ast.Node<ast.NodeData>[]>(
+        section: ParseSection,
+        fn: () => T,
+        errValue: T
+    ): T {
+        fn = fn.bind(this);
+        try {
+            return fn();
+        } catch (err) {
+            let retry: boolean = this.sychronize(section);
+            return retry ? fn() : errValue;
+        }
+    }
+
+    public parse(): [ast.Node<ast.Program>, ParseError[]] {
+        return [this.program(), this.errors];
     }
 
     private program(): ast.Node<ast.Program> {
@@ -68,17 +142,29 @@ export class Parser {
     private block(): ast.Block {
         let declarations = [];
         if (this.match(TT.VAR)) {
-            declarations.push(...this.var_decl_sect());
+            this.consume(TT.VAR);
+            declarations.push(
+                ...this.callOrSync(ParseSection.VarDecl, this.var_decl_sect, [])
+            );
         }
         if (this.match(TT.PROCEDURE) || this.match(TT.FUNCTION)) {
-            declarations.push(...this.sub_decl_sect());
+            declarations.push(
+                ...this.callOrSync(
+                    ParseSection.SubRDecl,
+                    this.sub_decl_sect,
+                    []
+                )
+            );
         }
-        let statements = this.compound_stmt();
+        let statements = this.callOrSync(
+            ParseSection.Stmt,
+            this.compound_stmt,
+            []
+        );
         return { declarations, statements };
     }
 
     private var_decl_sect(): ast.Node<ast.VarDecl>[] {
-        this.consume(TT.VAR);
         let decl = this.var_decl();
         let declarations = [newNode(decl.id, ast.NodeKind.VarDecl, decl)];
         this.consume(TT.SEMICOL);
@@ -109,7 +195,7 @@ export class Parser {
                 isArray: false,
             });
         }
-        let tok = this.consume(TT.ARRAY);
+        let tok = this.consume(TT.ARRAY, typeError);
         this.consume(TT.LBRACK);
         let range = this.index_range();
         this.consume(TT.RBRACK);
@@ -138,7 +224,7 @@ export class Parser {
             case TT.REAL:
                 return this.consume(TT.REAL);
             default:
-                this.throwError("Tipo de dados inválido", this.lookahead);
+                this.throwError(typeError, this.lookahead);
                 return this.lookahead;
         }
     }

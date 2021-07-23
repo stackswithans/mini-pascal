@@ -1,0 +1,11 @@
+
+program erros;
+var 
+angola: juju;
+ide INTEGER;
+ide: integer
+
+BEGIN
+    teste
+END
+.
