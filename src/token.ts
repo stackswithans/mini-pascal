@@ -55,6 +55,7 @@ const keywords = {
     div: TT.DIV,
     or: TT.OR,
     and: TT.AND,
+    not: TT.NOT,
     if: TT.IF,
     then: TT.THEN,
     else: TT.ELSE,

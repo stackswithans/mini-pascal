@@ -198,14 +198,25 @@ export class Lexer {
                 break;
             case LexState.DELIMETER:
                 switch (char) {
-                    case ":":
+                    case ":": {
                         token = new Token(
                             TT.COLON,
-                            this.advanceChar(),
+                            char,
                             this.fLine,
                             this.fCol
                         );
+                        let next = this.peekNextChar();
+                        if (next === "=") {
+                            //Avançar twice
+                            let lexeme =
+                                this.advanceChar() + this.advanceChar();
+                            token.lexeme = lexeme;
+                            token.token = TT.ASSIGN;
+                        } else {
+                            token.lexeme = this.advanceChar();
+                        }
                         break;
+                    }
                     case ";":
                         token = new Token(
                             TT.SEMICOL,

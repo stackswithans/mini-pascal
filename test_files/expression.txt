@@ -1,0 +1,13 @@
+program FILEMONMEUPAI;
+BEGIN
+  v1 := 2+2;  
+  v2 := 2-2;  
+  v := 2 div 2;  
+  v := 2 / 2;  
+  v := true  and false;  
+  v := true  or false;  
+  v := not false;
+  v := var + 2;
+  v := -((func(s) + 2) - (4 * (manteiga[0])) - 1);
+END
+.

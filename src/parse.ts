@@ -227,6 +227,7 @@ export class Parser {
 
     private statement(): ast.Node<ast.Statement> {
         if (this.match(TT.ID) || this.match(TT.READ) || this.match(TT.WRITE)) {
+            console.log("Hereee");
             return this.simple_stmt();
         } else {
             return this.struct_stmt();
