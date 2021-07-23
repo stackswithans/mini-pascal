@@ -1,0 +1,33 @@
+
+program FILEMONMEUPAI;
+
+FUNCTION teste: integer;
+
+function teste(angola: real: integer;
+var angola1: integer;
+angola2: integer;
+BEGIN
+    read(angola)
+END
+;
+
+procedure teste;
+var angola1: integer;
+angola2: integer
+BEGIN
+    teste1
+END
+;
+
+PROCEDURE (angola: integer; kenya: real);
+var angola1: integer;
+angola2: integer;
+BEGIN
+    teste;
+END
+;
+
+BEGIN
+    teste
+END
+.

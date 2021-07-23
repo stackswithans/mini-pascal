@@ -37,7 +37,6 @@ export class Parser {
 
     private throwError(message: string, context: Token) {
         const errMsg = `Erro sintático: (${context.line}:${context.col}): ${message}`;
-        console.error(errMsg);
         let error = {
             message: errMsg,
             line: context.line,
@@ -56,7 +55,7 @@ export class Parser {
             let errMsg =
                 message !== ""
                     ? message
-                    : `Expected ${tokenT} but got ${this.lookahead.token}`;
+                    : `Esperava-se o token ${tokenT} mas recebeu '${this.lookahead.lexeme}'`;
             let errContext = context === null ? this.lookahead : context;
             this.throwError(errMsg, errContext);
         }
@@ -81,7 +80,8 @@ export class Parser {
                         return false;
                     } else if (this.match(TT.SEMICOL)) {
                         this.consume(TT.SEMICOL);
-                        return this.match(TT.ID) ? true : false;
+                        if (!this.match(TT.ID)) continue;
+                        return true;
                     }
                     this.consume(this.lookahead.token);
                     continue;
@@ -126,8 +126,12 @@ export class Parser {
         }
     }
 
-    public parse(): [ast.Node<ast.Program>, ParseError[]] {
-        return [this.program(), this.errors];
+    public parse(): [ast.Node<ast.Program> | null, ParseError[]] {
+        try {
+            return [this.program(), this.errors];
+        } catch (err) {
+            return [null, this.errors];
+        }
     }
 
     private program(): ast.Node<ast.Program> {
@@ -286,8 +290,10 @@ export class Parser {
     }
 
     private formal_params(): ast.Node<ast.VarDecl>[] {
+        let argErr =
+            "Os argumentos de uma subrotina devem ser delimitados por parêntesis";
         let params = [];
-        this.consume(TT.LPAR);
+        this.consume(TT.LPAR, argErr);
         let decl = this.var_decl();
         params.push(newNode(decl.id, ast.NodeKind.VarDecl, decl));
         while (this.match(TT.SEMICOL)) {
@@ -295,7 +301,7 @@ export class Parser {
             let decl = this.var_decl();
             params.push(newNode(decl.id, ast.NodeKind.VarDecl, decl));
         }
-        this.consume(TT.RPAR);
+        this.consume(TT.RPAR, argErr);
         return params;
     }
 
