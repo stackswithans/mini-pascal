@@ -109,6 +109,32 @@ export interface Literal {
     value: string;
 }
 
+function inspectExpression<T extends NodeData>(node: Node<T>): string {
+    switch (node.nodeKind) {
+        case NodeKind.BinOp: {
+            let { lhs, op, rhs } = node.data as BinOp;
+            return `BinOp: ${inspectExpression(lhs)} ${
+                op.lexeme
+            } ${inspectExpression(rhs)}`;
+        }
+        case NodeKind.UnaryOp: {
+            let { op, operand } = node.data as UnaryOp;
+            return `UnaryOp: ${op.lexeme} ${inspectExpression(operand)}`;
+        }
+        case NodeKind.Literal: {
+            return (node.data as Literal).value;
+        }
+        case NodeKind.Variable: {
+            return (node.data as Variable).id.lexeme;
+        }
+        case NodeKind.Call: {
+            return (node.data as Call).callee.data.id.lexeme;
+        }
+        default:
+            return "";
+    }
+}
+
 export function inspect<T extends NodeData>(node: Node<T>) {
     const stringifyType = (typeNode: Node<Type>) =>
         typeNode.data.isArray ? "[]" : "";
@@ -183,9 +209,9 @@ export function inspect<T extends NodeData>(node: Node<T>) {
             break;
         }
         case NodeKind.Assign: {
-            let { target } = node.data as Assign;
+            let { target, expr } = node.data as Assign;
             let message = `Statement:
-            ${target.data.id.lexeme}`;
+            ${target.data.id.lexeme} = ${inspectExpression(expr)}`;
             console.log(message);
             break;
         }
@@ -194,6 +220,14 @@ export function inspect<T extends NodeData>(node: Node<T>) {
             let message = `Statement:
             ${callee.data.id.lexeme}`;
             console.log(message);
+            break;
+        }
+        case NodeKind.BinOp:
+        case NodeKind.UnaryOp:
+        case NodeKind.Literal:
+        case NodeKind.Variable:
+        case NodeKind.Call: {
+            console.log(inspectExpression(node));
             break;
         }
     }

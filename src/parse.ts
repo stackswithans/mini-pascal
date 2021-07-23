@@ -227,7 +227,6 @@ export class Parser {
 
     private statement(): ast.Node<ast.Statement> {
         if (this.match(TT.ID) || this.match(TT.READ) || this.match(TT.WRITE)) {
-            console.log("Hereee");
             return this.simple_stmt();
         } else {
             return this.struct_stmt();
@@ -275,12 +274,12 @@ export class Parser {
             });
         } else {
             this.throwError("Início de instrução inválido", this.lookahead);
-            return [] as any;
+            throw new Error();
         }
     }
 
     private struct_stmt(): any {
-        return;
+        return [];
     }
 
     private io_args(): ast.Node<ast.Variable>[] {
@@ -298,6 +297,7 @@ export class Parser {
         this.consume(TT.RPAR);
         return variables;
     }
+
     private variable(): ast.Variable {
         const id = this.consume(TT.ID);
         if (!this.match(TT.LBRACK)) {
@@ -309,8 +309,16 @@ export class Parser {
         return { id, index };
     }
 
-    private formal_args(): any {
-        return [];
+    private formal_args(): ast.Node<ast.Expression>[] {
+        let expressions = [];
+        this.consume(TT.LPAR);
+        expressions.push(this.expression());
+        while (this.match(TT.COMMA)) {
+            this.consume(TT.COMMA);
+            expressions.push(this.expression());
+        }
+        this.consume(TT.RPAR);
+        return expressions;
     }
 
     private expression(): ast.Node<ast.Expression> {
@@ -319,7 +327,9 @@ export class Parser {
             this.match(TT.GREATER) ||
             this.match(TT.GREATEREQ) ||
             this.match(TT.LESS) ||
-            this.match(TT.LESSEQ)
+            this.match(TT.LESSEQ) ||
+            this.match(TT.AND) ||
+            this.match(TT.OR)
         ) {
             let op = this.consume(this.lookahead.token);
             let rhs = this.simple_expr();
@@ -370,6 +380,7 @@ export class Parser {
                 if (this.match(TT.LBRACK)) {
                     this.consume(TT.LBRACK);
                     let index = this.expression();
+                    this.consume(TT.RBRACK);
                     return newNode(id, ast.NodeKind.Variable, { id, index });
                 } else if (this.match(TT.LPAR)) {
                     let args = this.formal_args();
@@ -380,8 +391,10 @@ export class Parser {
                 }
                 return newNode(id, ast.NodeKind.Variable, { id });
             }
-            case TT.INTEGER:
-            case TT.CHAR:
+            case TT.INT:
+            case TT.FLOAT:
+            case TT.TRUE:
+            case TT.FALSE:
             case TT.STRING: {
                 let tok = this.consume(this.lookahead.token);
                 return newNode(tok, ast.NodeKind.Literal, {
@@ -403,7 +416,8 @@ export class Parser {
                 return newNode(negation.op, ast.NodeKind.UnaryOp, negation);
             }
             default:
-                throw new Error("Início inválido de expressão");
+                this.throwError("Início inválido de expressão", this.lookahead);
+                throw new Error();
         }
     }
 }
