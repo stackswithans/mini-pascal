@@ -1,4 +1,3 @@
-import { Token } from "./token";
 import * as ast from "./ast";
 
 type SemError = { line: number; message: string; col: number };
@@ -59,40 +58,46 @@ class Checker {
         }
     }
 
-    checkVarDecl(node: ast.Node<ast.VarDecl>) {
+    idIsDeclared<T extends ast.NodeData>(
+        id: string,
+        node: ast.Node<T>,
+        message?: string
+    ): boolean {
+        if (id in this.scope.symbols) {
+            if (message === undefined) {
+                message = `O identificador '${id}' já foi declarado`;
+            }
+            this.reportError(message, node);
+            return true;
+        }
+        return false;
+    }
+
+    checkVarDecl(node: ast.Node<ast.VarDecl>, message?: string) {
         let { id } = node.data;
         let idStr = id.lexeme;
-        //Check if already
-        if (idStr in this.scope.symbols) {
-            this.reportError("Este identificador já foi declarado", node);
-            return;
-        }
+        if (this.idIsDeclared(idStr, node, message)) return;
         this.declareSymbol(idStr, node.nodeKind, node.data);
     }
 
     checkfuncDecl(node: ast.Node<ast.SubRoutine>) {
         let { name, formal_params } = node.data;
+        //TODO: Dedup this code;
         let nameStr = name.lexeme;
-        if (nameStr in this.scope.symbols) {
-            this.reportError("Este identificador já foi declarado", node);
-            return;
-        }
+        if (this.idIsDeclared(nameStr, node)) return;
         this.declareSymbol(nameStr, node.nodeKind, node.data);
         let funcScope: Scope = { parent: this.scope, symbols: {} };
         this.scope = funcScope;
         //Verify args
-        //TODO: Dedup this code;
+        this.declareSymbol(nameStr, ast.NodeKind.SubRoutine, node.data);
         for (let decl of formal_params) {
             let idStr = decl.data.id.lexeme;
-            if (idStr in this.scope.symbols) {
-                this.reportError(
-                    `O parâmetro '${idStr}' já foi declarado nesta função`,
-                    node
-                );
-                return;
-            }
-            this.declareSymbol(idStr, decl.nodeKind, node.data);
+            this.checkVarDecl(
+                decl,
+                `O parâmetro '${idStr}' já foi declarado nesta função`
+            );
         }
+        this.checkBlock(node.data.block);
         this.scope = funcScope.parent as Scope;
     }
 }

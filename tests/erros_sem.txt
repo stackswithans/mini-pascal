@@ -4,7 +4,12 @@ angola: real;
 ide: INTEGER;
 ide: integer;
 
-function fa(angola: real; angola: integer): integer;
+procedure fa(barco: real; barco: integer);
+BEGIN
+    teste1
+END;
+
+function fa1(angola: real; angola: integer): integer;
 BEGIN
     teste1
 END;
