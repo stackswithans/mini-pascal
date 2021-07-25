@@ -32,7 +32,7 @@ PROCEDURE teste(angola: integer; kenya: real);
 var angola1: integer;
 angola2: integer;
 BEGIN
-    teste;
+    teste
 END
 ;
 BEGIN
