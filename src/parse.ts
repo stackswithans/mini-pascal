@@ -121,8 +121,13 @@ export class Parser {
         try {
             return fn();
         } catch (err) {
-            let retry: boolean = this.sychronize(section);
-            return retry ? fn() : errValue;
+            //Retry after synchronizing. If retry results in error, just quit
+            try {
+                let retry: boolean = this.sychronize(section);
+                return retry ? fn() : errValue;
+            } catch {
+                return errValue;
+            }
         }
     }
 
@@ -139,7 +144,7 @@ export class Parser {
         let id = this.consume(TT.ID);
         this.consume(TT.SEMICOL);
         let block = this.block();
-        this.consume(TT.DOT);
+        this.consume(TT.DOT, "Os programas devem ser terminados com '.'");
         return newNode(id, ast.NodeKind.Program, { id, block });
     }
 
@@ -307,21 +312,28 @@ export class Parser {
 
     private compound_stmt(): ast.Node<ast.Statement>[] {
         const statements = [];
-        this.consume(TT.BEGIN);
-        statements.push(this.statement());
+        this.consume(TT.BEGIN, "Esperava-se o início de um bloco");
+        statements.push(...this.statement());
         while (this.match(TT.SEMICOL)) {
             this.consume(TT.SEMICOL);
-            statements.push(this.statement());
+            statements.push(...this.statement());
         }
-        this.consume(TT.END);
+        this.consume(TT.END, "Esperava-se o início de um bloco");
         return statements;
     }
 
-    private statement(): ast.Node<ast.Statement> {
+    private statement(): ast.Node<ast.Statement>[] {
         if (this.match(TT.ID) || this.match(TT.READ) || this.match(TT.WRITE)) {
-            return this.simple_stmt();
-        } else {
+            return [this.simple_stmt()];
+        } else if (
+            this.match(TT.BEGIN) ||
+            this.match(TT.IF) ||
+            this.match(TT.WHILE)
+        ) {
             return this.struct_stmt();
+        } else {
+            this.throwError("Início de instrução inválido", this.lookahead);
+            throw new Error();
         }
     }
 
@@ -370,8 +382,46 @@ export class Parser {
         }
     }
 
-    private struct_stmt(): any {
-        return [];
+    private struct_stmt(): ast.Node<ast.Statement>[] {
+        switch (this.lookahead.token) {
+            case TT.BEGIN:
+                return this.compound_stmt();
+            case TT.IF:
+                return [this.if_stmt()];
+            case TT.WHILE:
+                return [this.while_stmt()];
+            default:
+                this.throwError("Início de instrução inválido", this.lookahead);
+                throw new Error();
+        }
+    }
+
+    private if_stmt(): ast.Node<ast.Statement> {
+        let token = this.consume(TT.IF);
+        let condition = this.expression();
+        this.consume(TT.THEN);
+        let thenBranch = this.statement();
+        let elseBranch: ast.Node<ast.Statement>[] = [];
+        if (this.match(TT.ELSE)) {
+            this.consume(TT.ELSE);
+            elseBranch = this.statement();
+        }
+        return newNode(token, ast.NodeKind.IfStmt, {
+            condition,
+            thenBranch,
+            elseBranch,
+        });
+    }
+
+    private while_stmt(): ast.Node<ast.Statement> {
+        let token = this.consume(TT.WHILE);
+        let condition = this.expression();
+        this.consume(TT.DO);
+        let statement = this.statement();
+        return newNode(token, ast.NodeKind.WhileStmt, {
+            condition,
+            statement,
+        });
     }
 
     private io_args(): ast.Node<ast.Variable>[] {
@@ -417,6 +467,7 @@ export class Parser {
         let lhs = this.simple_expr();
         while (
             this.match(TT.GREATER) ||
+            this.match(TT.EQ) ||
             this.match(TT.GREATEREQ) ||
             this.match(TT.LESS) ||
             this.match(TT.LESSEQ) ||

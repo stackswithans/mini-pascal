@@ -10,6 +10,8 @@ export enum NodeKind {
     Call,
     Assign,
     IOStmt,
+    IfStmt,
+    WhileStmt,
     Variable,
     BinOp,
     UnaryOp,
@@ -89,7 +91,20 @@ export interface Call {
     args: Node<Expression>[];
 }
 
-export type Statement = Variable | IOStmt | Assign | Call;
+export interface WhileStmt {
+    condition: Node<Expression>;
+    statement: Node<Statement>[];
+}
+
+export interface IfStmt {
+    condition: Node<Expression>;
+    thenBranch: Node<Statement>[];
+    elseBranch: Node<Statement>[];
+}
+
+export interface IfStmt {}
+
+export type Statement = Variable | IOStmt | Assign | Call | WhileStmt | IfStmt;
 
 export type Expression = BinOp | UnaryOp | Variable | Call | Literal;
 

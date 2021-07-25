@@ -13,7 +13,7 @@ const main = () => {
     let numErrs = errors.length;
     //Reportar erros sintáticos
     if (numErrs > 0) {
-        console.error(`Foram encontrado(s) ${numErrs} erros: \n`);
+        console.error(`Foram encontrado(s) ${numErrs} erros sintáticos: \n`);
         errors.forEach((err) => console.error(err.message));
         exit(1);
     }

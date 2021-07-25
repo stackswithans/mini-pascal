@@ -1,0 +1,33 @@
+program FILEMONMEUPAI;
+BEGIN
+  v1 := 2+2;  
+  v2 := 2-2;  
+  v3 := 2 div 2;  
+  v4 := 2 / 2;  
+  v5 := true  and false;  
+  v6 := ((2.182 - 2.12172) >= (2.182 + (40.2)))  and false;  
+  v7 := true  or false;  
+  v8 := not false;
+  v9 := v + 2;
+  v10 := -((func(s, 2.83, a[0], a[v1]) + 2) - (4 * (manteiga[3-2*2])) - 1);
+
+  if 2 = 2 then
+    v10 := 2
+  ;
+
+  while 2 > 9 do
+    begin
+        test
+    end
+   ;
+
+  if 2 = 2 then
+    BEGIN test END
+  else
+    test := 9
+  ;
+
+  while true do
+    test
+END
+.
