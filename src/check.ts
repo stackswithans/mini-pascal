@@ -15,8 +15,7 @@ class Checker {
     errors: SemError[] = [];
 
     reportError<T extends ast.NodeData>(message: string, ctx: ast.Node<T>) {
-        let errMsg = `Erro semântico (${ctx.line}:${ctx.col}): ${message}`;
-        console.log(errMsg);
+        let errMsg = `Erro semântico (${ctx.line}:${ctx.col}): ${message}.`;
         this.errors.push({ message: errMsg, line: ctx.line, col: ctx.col });
     }
 

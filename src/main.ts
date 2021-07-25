@@ -1,5 +1,4 @@
 import { Parser } from "./parse";
-import { inspect } from "./ast";
 import { verifyProgram } from "./check";
 import { readFileSync } from "fs";
 import { exit } from "process";
@@ -19,13 +18,11 @@ const main = () => {
     const src = readFileSync(filename).toString("utf-8");
     const parser = new Parser(src);
     let [program, errors] = parser.parse();
-    let numErrs = errors.length;
     //Reportar erros sintáticos
-    showErrors(numErrs > 0, errors);
-    inspect(program as Node<Program>);
+    showErrors(program === null, errors);
     let [hasErrors, errs] = verifyProgram(program as Node<Program>);
     //Reportar Errors semânticos
-    showErrors(hasErrors, errors);
+    showErrors(hasErrors, errs);
 };
 
 main();

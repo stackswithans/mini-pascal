@@ -1,0 +1,13 @@
+program FILEMONMEUPAI;
+var 
+angola: real;
+ide: INTEGER;
+ide: integer;
+
+
+
+
+BEGIN
+    teste
+END
+.
