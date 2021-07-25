@@ -4,8 +4,10 @@ angola: real;
 ide: INTEGER;
 ide: integer;
 
-
-
+function fa(angola: real; angola: integer): integer;
+BEGIN
+    teste1
+END;
 
 BEGIN
     teste
