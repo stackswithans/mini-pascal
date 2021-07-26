@@ -15,6 +15,7 @@ BEGIN
 END;
 
 BEGIN
-    read(teste)
+    read(teste);
+    write(ide[0])
 END
 .

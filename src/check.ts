@@ -1,10 +1,17 @@
 import * as ast from "./ast";
+import { TT } from "./token";
 import { equal } from "assert";
+import { Result, isOk } from "./types";
 
 type SemError = { line: number; message: string; col: number };
 
 type SymbolData = { kind: ast.NodeKind; data: ast.NodeData };
 type SymbolTable = Record<string, SymbolData>;
+
+interface EvalType {
+    eType: TT;
+    isArray: boolean;
+}
 
 interface Scope {
     parent: Scope | null;
@@ -130,8 +137,8 @@ class Checker {
         }
     }
 
-    checkVariable(variable: ast.Node<ast.Variable>): any {
-        let { id } = variable.data;
+    checkVariable(variable: ast.Node<ast.Variable>): Result<EvalType> {
+        let { id, index } = variable.data;
         let idStr = id.lexeme;
         let data = this.resolveVariable(idStr);
         if (data === null) {
@@ -139,9 +146,19 @@ class Checker {
                 `A variável '${idStr}' não foi declarada`,
                 variable
             );
+            return {};
         }
-        return;
-        let varData = (<SymbolData>data).data as ast.VarDecl;
+        let { typeTok, isArray, range } = (<ast.VarDecl>(
+            (<SymbolData>data).data
+        )).varType.data;
+        if (index !== undefined && !isArray) {
+            this.reportError(
+                `A variável '${idStr}' não é um array. Apenas os arrays podem ser acedidos com índices`,
+                variable
+            );
+            return {};
+        }
+        return { result: { eType: typeTok, isArray } };
     }
 }
 
