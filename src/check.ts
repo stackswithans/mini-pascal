@@ -1,13 +1,14 @@
 import * as ast from "./ast";
+import { equal } from "assert";
 
 type SemError = { line: number; message: string; col: number };
 
 type SymbolData = { kind: ast.NodeKind; data: ast.NodeData };
-type Symbol = Record<string, SymbolData>;
+type SymbolTable = Record<string, SymbolData>;
 
 interface Scope {
     parent: Scope | null;
-    symbols: Symbol;
+    symbols: SymbolTable;
 }
 
 class Checker {
@@ -53,6 +54,16 @@ class Checker {
                 this.checkfuncDecl(funcDecl);
                 break;
             }
+            case ast.NodeKind.IOStmt: {
+                let ioStmt = node as ast.Node<ast.IOStmt>;
+                this.checkIOStmt(ioStmt);
+                break;
+            }
+            case ast.NodeKind.Variable: {
+                let variable = node as ast.Node<ast.Variable>;
+                this.checkVariable(variable);
+                break;
+            }
             default:
                 console.log(`Not implement yet`);
         }
@@ -71,6 +82,17 @@ class Checker {
             return true;
         }
         return false;
+    }
+
+    resolveVariable(id: string): SymbolData | null {
+        let scope: Scope | null = this.scope;
+        while (scope !== null) {
+            if (id in scope.symbols) {
+                return scope.symbols[id];
+            }
+            scope = scope.parent;
+        }
+        return null;
     }
 
     checkVarDecl(node: ast.Node<ast.VarDecl>, message?: string) {
@@ -99,6 +121,27 @@ class Checker {
         }
         this.checkBlock(node.data.block);
         this.scope = funcScope.parent as Scope;
+    }
+
+    checkIOStmt(ioStmt: ast.Node<ast.IOStmt>) {
+        let args: ast.Node<ast.Variable>[] = ioStmt.data.args;
+        for (let arg of args) {
+            this.checkVariable(arg);
+        }
+    }
+
+    checkVariable(variable: ast.Node<ast.Variable>): any {
+        let { id } = variable.data;
+        let idStr = id.lexeme;
+        let data = this.resolveVariable(idStr);
+        if (data === null) {
+            this.reportError(
+                `A variável '${idStr}' não foi declarada`,
+                variable
+            );
+        }
+        return;
+        let varData = (<SymbolData>data).data as ast.VarDecl;
     }
 }
 

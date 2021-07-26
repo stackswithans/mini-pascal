@@ -15,6 +15,6 @@ BEGIN
 END;
 
 BEGIN
-    teste
+    read(teste)
 END
 .
