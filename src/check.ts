@@ -94,12 +94,18 @@ class Checker {
                 if (!isOk(exprType) || !isOk(targetType)) return;
                 let tType = targetType.result.eType;
                 let eType = exprType.result.eType;
-                //TODO: Add proper compatibility rules:
-                // int can't store floats
-                // Arrays can't store arrays of different types
+                if (targetType.result.isArray || targetType.result.isArray) {
+                    this.reportError(
+                        `Arrays não podem participar de atribuições.`,
+                        target
+                    );
+                    return;
+                }
                 if (
                     tType != eType &&
-                    (!isNumeric(tType) || !isNumeric(eType))
+                    (!isNumeric(tType) ||
+                        !isNumeric(eType) ||
+                        (tType == TT.INTEGER && eType == TT.REAL))
                 ) {
                     this.reportError(
                         `Variável do tipo '${tType.toLowerCase()}' não pode armazenar um valor do tipo '${eType.toLowerCase()}'`,

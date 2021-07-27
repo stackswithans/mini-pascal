@@ -26,7 +26,11 @@ BEGIN
     angola := 2.34 + kole;
     angola := -'string';
 
-    kole := 2
+    kole := 2;
+
+    ide := 1.8;
+
+    angola := 2
 
 END
 .
