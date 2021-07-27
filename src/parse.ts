@@ -144,7 +144,7 @@ export class Parser {
         let id = this.consume(TT.ID);
         this.consume(TT.SEMICOL);
         let block = this.block();
-        this.consume(TT.DOT, "Os programas devem ser terminados com '.'");
+        this.consume(TT.DOT);
         return newNode(id, ast.NodeKind.Program, { id, block });
     }
 
@@ -316,13 +316,13 @@ export class Parser {
 
     private compound_stmt(): ast.Node<ast.Statement>[] {
         const statements = [];
-        this.consume(TT.BEGIN, "Esperava-se o início de um bloco");
+        this.consume(TT.BEGIN);
         statements.push(...this.statement());
         while (this.match(TT.SEMICOL)) {
             this.consume(TT.SEMICOL);
             statements.push(...this.statement());
         }
-        this.consume(TT.END, "Esperava-se o início de um bloco");
+        this.consume(TT.END);
         return statements;
     }
 
@@ -363,9 +363,7 @@ export class Parser {
                         variable.id
                     );
                 }
-                this.consume(TT.LPAR);
                 const args = this.formal_args();
-                this.consume(TT.RPAR);
                 return newNode(variable.id, ast.NodeKind.Call, {
                     callee: target,
                     args,

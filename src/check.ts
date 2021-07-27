@@ -26,6 +26,16 @@ const newType = (eType: TT, isArray: boolean) => {
 
 const isNumeric = (eType: Type) => eType == TT.REAL || eType == TT.INTEGER;
 
+const typesMatch = (self: Type, other: Type) => {
+    return (
+        self == other ||
+        (isNumeric(self) &&
+            isNumeric(other) &&
+            self == TT.REAL &&
+            other == TT.INTEGER)
+    );
+};
+
 class Checker {
     scope: Scope = { parent: null, symbols: {} };
     errors: SemError[] = [];
@@ -101,12 +111,7 @@ class Checker {
                     );
                     return;
                 }
-                if (
-                    tType != eType &&
-                    (!isNumeric(tType) ||
-                        !isNumeric(eType) ||
-                        (tType == TT.INTEGER && eType == TT.REAL))
-                ) {
+                if (!typesMatch(tType, eType)) {
                     this.reportError(
                         `Variável do tipo '${tType.toLowerCase()}' não pode armazenar um valor do tipo '${eType.toLowerCase()}'`,
                         target
@@ -149,7 +154,6 @@ class Checker {
     checkVarDecl(node: ast.Node<ast.VarDecl>, message?: string) {
         let { id } = node.data;
         let idStr = id.lexeme;
-        console.log(idStr);
         if (this.idIsDeclared(idStr, node, message)) return;
         this.declareSymbol(idStr, node.nodeKind, node.data);
     }
@@ -193,6 +197,9 @@ class Checker {
                 variable
             );
             return {};
+        }
+        if (data.kind === ast.NodeKind.SubRoutine) {
+            return this.checkCall(variable);
         }
         let { typeTok, isArray } = (<ast.VarDecl>(
             (<SymbolData>data).data
@@ -298,7 +305,8 @@ class Checker {
             case ast.NodeKind.Call: {
                 //TODO: Check if the callee is a function;
                 //Check arity and assert that args match params;
-                return {};
+                let { callee, args } = expr.data as ast.Call;
+                return this.checkCall(callee, args);
             }
             case ast.NodeKind.Literal: {
                 let { tokType } = expr.data as ast.Literal;
@@ -322,6 +330,60 @@ class Checker {
             default:
                 return {};
         }
+    }
+
+    checkCall(
+        callee: ast.Node<ast.Variable>,
+        args?: ast.Node<ast.Expression>[]
+    ): Result<EvalType> {
+        let funcName = callee.data.id.lexeme;
+        let symbol = this.resolveVariable(funcName);
+        if (!args) {
+            args = [];
+        }
+        if (symbol === null) {
+            this.reportError(`A função '${funcName}' não declarada`, callee);
+            return {};
+        }
+        let { kind } = symbol as SymbolData;
+        if (kind != ast.NodeKind.SubRoutine) {
+            this.reportError(
+                `O identificador  '${funcName}' não é uma função`,
+                callee
+            );
+            return {};
+        }
+        let data = (<SymbolData>symbol).data as ast.SubRoutine;
+        let numParams = data.formal_params.length;
+        let numArgs = args.length;
+        if (numParams != numArgs) {
+            this.reportError(
+                `A função '${funcName}' espera ${numParams} argumentos mas recebeu ${numArgs}`,
+                callee
+            );
+            return {};
+        }
+        if (data.returnType === null) {
+            return {};
+        }
+        let returnType = (<ast.Node<ast.Type>>data.returnType).data;
+        return newType(returnType.typeTok.token, returnType.isArray);
+        /*
+        TODO: Check if arg type matches param type
+        data.formal_params.forEach((param, index) => {
+            let arg = (args as ast.Node<ast.Expression>[])[index];
+            let argType = this.checkExpression(arg);
+            let paramType = param.data.varType.data;
+            if (!isOk(argType)) {
+                return;
+            }
+            if(paramType.isArray != argType.result.isArray){
+                this
+
+            }
+            let argTToken = argType.result.eType;
+            let paramTToken = paramType.typeTok;
+        });*/
     }
 }
 

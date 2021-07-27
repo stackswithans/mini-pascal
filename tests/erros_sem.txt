@@ -33,7 +33,12 @@ BEGIN
 
     ide := 1.8;
 
-    angola := 2
+    angola := 2;
 
+    ide(1);
+
+    fa;
+
+    angola := fa(1.2, 1)
 END
 .
