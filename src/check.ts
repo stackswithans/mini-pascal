@@ -24,6 +24,8 @@ const newType = (eType: TT, isArray: boolean) => {
     return { result: { eType, isArray } };
 };
 
+const isNumeric = (eType: Type) => eType == TT.REAL || eType == TT.INTEGER;
+
 class Checker {
     scope: Scope = { parent: null, symbols: {} };
     errors: SemError[] = [];
@@ -87,9 +89,25 @@ class Checker {
             }
             case ast.NodeKind.Assign: {
                 let { target, expr } = node.data as ast.Assign;
+                let targetType = this.checkVariable(target);
                 let exprType = this.checkExpression(expr);
-                if (!isOk(exprType)) return;
-                //TODO: Check if types match;
+                if (!isOk(exprType) || !isOk(targetType)) return;
+                let tType = targetType.result.eType;
+                let eType = exprType.result.eType;
+                //TODO: Add proper compatibility rules:
+                // int can't store floats
+                // Arrays can't store arrays of different types
+                if (
+                    tType != eType &&
+                    (!isNumeric(tType) || !isNumeric(eType))
+                ) {
+                    this.reportError(
+                        `Variável do tipo '${tType.toLowerCase()}' não pode armazenar um valor do tipo '${eType.toLowerCase()}'`,
+                        target
+                    );
+                    return;
+                }
+                break;
             }
             default:
                 console.log(`Not implement yet`);
@@ -125,6 +143,7 @@ class Checker {
     checkVarDecl(node: ast.Node<ast.VarDecl>, message?: string) {
         let { id } = node.data;
         let idStr = id.lexeme;
+        console.log(idStr);
         if (this.idIsDeclared(idStr, node, message)) return;
         this.declareSymbol(idStr, node.nodeKind, node.data);
     }
@@ -206,8 +225,6 @@ class Checker {
                 let errMsg = `Incompatibilidade entre os operandos do operador '${
                     op.lexeme
                 }': '${lType.toLowerCase()}' e '${rType.toLowerCase()}'`;
-                const isNumeric = (eType: Type) =>
-                    eType == TT.REAL || rType == TT.INTEGER;
                 switch (op.token) {
                     case TT.ADDOP:
                     case TT.SUBOP:
@@ -243,7 +260,6 @@ class Checker {
                 }
             }
             case ast.NodeKind.UnaryOp: {
-                //TODO: Check if operand is int or float
                 let { op, operand } = expr.data as ast.UnaryOp;
                 let operandType = this.checkExpression(operand);
                 if (!isOk(operandType)) {
@@ -263,12 +279,24 @@ class Checker {
             }
             case ast.NodeKind.Call: {
                 //TODO: Check if the callee is a function;
-                //TODO: Check arity and assert that args match params;
+                //Check arity and assert that args match params;
                 return {};
             }
             case ast.NodeKind.Literal: {
                 let { tokType } = expr.data as ast.Literal;
-                return newType(tokType, false);
+                switch (tokType) {
+                    case TT.INT:
+                        return newType(TT.INTEGER, false);
+                    case TT.FLOAT:
+                        return newType(TT.REAL, false);
+                    case TT.STRING:
+                        return newType(TT.CHAR, false);
+                    case TT.TRUE:
+                    case TT.FALSE:
+                        return newType(TT.BOOLEAN, false);
+                    default:
+                        return {};
+                }
             }
             case ast.NodeKind.Variable: {
                 return this.checkVariable(expr as ast.Node<ast.Variable>);

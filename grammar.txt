@@ -17,7 +17,7 @@ array_type : ARRAY LBRACK index_range RBRACK OF simple_type;
 
 index_range : integer_constant DOTDOT integer_constant;
 
-simple_type : char | integer | integer;
+simple_type : char | integer | real;
 
 
 sub_decl_sect : ((proc_decl | func_decl) SEMICOL)*

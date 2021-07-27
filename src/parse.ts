@@ -203,18 +203,22 @@ export class Parser {
                 typeTok,
                 isArray: false,
             });
+        } else if (this.match(TT.ARRAY)) {
+            let tok = this.consume(TT.ARRAY, typeError);
+            this.consume(TT.LBRACK);
+            let range = this.index_range();
+            this.consume(TT.RBRACK);
+            this.consume(TT.OF);
+            let typeTok = this.simple_type();
+            return newNode(tok, ast.NodeKind.Type, {
+                typeTok,
+                isArray: true,
+                range,
+            });
+        } else {
+            this.throwError("Tipo de dados inválido", this.lookahead);
+            throw new Error();
         }
-        let tok = this.consume(TT.ARRAY, typeError);
-        this.consume(TT.LBRACK);
-        let range = this.index_range();
-        this.consume(TT.RBRACK);
-        this.consume(TT.OF);
-        let typeTok = this.simple_type();
-        return newNode(tok, ast.NodeKind.Type, {
-            typeTok,
-            isArray: true,
-            range,
-        });
     }
 
     private index_range(): ast.Node<ast.ArrayRange> {
@@ -541,14 +545,8 @@ export class Parser {
             case TT.FALSE:
             case TT.STRING: {
                 let tok = this.consume(this.lookahead.token);
-                let typeTok;
-                if (tok.token == TT.TRUE || TT.FALSE == tok.token) {
-                    typeTok = TT.BOOLEAN;
-                } else {
-                    typeTok = tok.token === TT.STRING ? TT.CHAR : tok.token;
-                }
                 return newNode(tok, ast.NodeKind.Literal, {
-                    tokType: typeTok,
+                    tokType: tok.token,
                     value: tok.lexeme,
                 });
             }

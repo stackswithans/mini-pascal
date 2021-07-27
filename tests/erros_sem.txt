@@ -1,10 +1,10 @@
 program FILEMONMEUPAI;
 var 
 angola: real;
+
 ide: INTEGER;
 ide: integer;
 kole: array [1..100] of char;
-existe: boolean;
 
 procedure fa(barco: real; barco: integer);
 BEGIN
@@ -13,7 +13,7 @@ END;
 
 function fa1(angola: real; angola: integer): integer;
 BEGIN
-    teste1
+    ide
 END;
 
 BEGIN
@@ -25,8 +25,8 @@ BEGIN
     angola := 2 + 'string';
     angola := 2.34 + kole;
     angola := -'string';
-    existe := 2 >= 'string';
-    existe := 3 = true 
+
+    kole := 2
 
 END
 .

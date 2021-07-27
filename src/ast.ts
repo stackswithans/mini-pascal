@@ -214,6 +214,9 @@ export function inspect<T extends NodeData>(node: Node<T>) {
                         Parâmetros: ${formal_params.length}
                         Retorna: ${returns}
                         `);
+            for (let param of formal_params) {
+                inspect(param);
+            }
             break;
         }
         case NodeKind.IOStmt: {
