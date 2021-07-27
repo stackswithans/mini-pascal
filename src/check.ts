@@ -96,7 +96,7 @@ class Checker {
                 let eType = exprType.result.eType;
                 if (targetType.result.isArray || targetType.result.isArray) {
                     this.reportError(
-                        `Arrays não podem participar de atribuições.`,
+                        `Arrays não podem participar de atribuições`,
                         target
                     );
                     return;
@@ -204,7 +204,19 @@ class Checker {
             );
             return {};
         }
-        //TODO: Check if index is a valid int;
+        if (index) {
+            let indexType = this.checkExpression(index);
+            if (!isOk(indexType)) {
+                return {};
+            }
+            if (indexType.result.eType != TT.INTEGER) {
+                this.reportError(
+                    "O índice de um array deve ser um inteiro",
+                    index
+                );
+                return {};
+            }
+        }
         //If the variable is an array access, evalType is the type
         // of the element
         return newType(typeTok.token, index ? false : isArray);

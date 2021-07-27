@@ -4,6 +4,7 @@ angola: real;
 
 ide: INTEGER;
 ide: integer;
+string: char;
 kole: array [1..100] of char;
 
 procedure fa(barco: real; barco: integer);
@@ -27,6 +28,8 @@ BEGIN
     angola := -'string';
 
     kole := 2;
+
+    string := kole['0'];
 
     ide := 1.8;
 
