@@ -471,6 +471,7 @@ export class Parser {
             this.match(TT.GREATEREQ) ||
             this.match(TT.LESS) ||
             this.match(TT.LESSEQ) ||
+            this.match(TT.NOTEQ) ||
             this.match(TT.AND) ||
             this.match(TT.OR)
         ) {
@@ -540,7 +541,12 @@ export class Parser {
             case TT.FALSE:
             case TT.STRING: {
                 let tok = this.consume(this.lookahead.token);
-                let typeTok = tok.token === TT.STRING ? TT.CHAR : tok.token;
+                let typeTok;
+                if (tok.token == TT.TRUE || TT.FALSE == tok.token) {
+                    typeTok = TT.BOOLEAN;
+                } else {
+                    typeTok = tok.token === TT.STRING ? TT.CHAR : tok.token;
+                }
                 return newNode(tok, ast.NodeKind.Literal, {
                     tokType: typeTok,
                     value: tok.lexeme,

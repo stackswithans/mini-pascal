@@ -4,6 +4,7 @@ angola: real;
 ide: INTEGER;
 ide: integer;
 kole: array [1..100] of char;
+existe: boolean;
 
 procedure fa(barco: real; barco: integer);
 BEGIN
@@ -23,7 +24,9 @@ BEGIN
     ide := -2; 
     angola := 2 + 'string';
     angola := 2.34 + kole;
-    angola := -'string'
+    angola := -'string';
+    existe := 2 >= 'string';
+    existe := 3 = true 
 
 END
 .

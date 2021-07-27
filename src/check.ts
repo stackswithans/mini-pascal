@@ -7,7 +7,7 @@ type SemError = { line: number; message: string; col: number };
 type SymbolData = { kind: ast.NodeKind; data: ast.NodeData };
 type SymbolTable = Record<string, SymbolData>;
 
-type Type = TT.REAL | TT.CHAR | TT.INTEGER;
+type Type = TT.REAL | TT.CHAR | TT.INTEGER | TT.BOOLEAN;
 
 interface EvalType {
     eType: Type;
@@ -87,7 +87,9 @@ class Checker {
             }
             case ast.NodeKind.Assign: {
                 let { target, expr } = node.data as ast.Assign;
-                this.checkExpression(expr);
+                let exprType = this.checkExpression(expr);
+                if (!isOk(exprType)) return;
+                //TODO: Check if types match;
             }
             default:
                 console.log(`Not implement yet`);
@@ -186,39 +188,34 @@ class Checker {
     checkExpression(expr: ast.Node<ast.Expression>): Result<EvalType> {
         switch (expr.nodeKind) {
             case ast.NodeKind.BinOp: {
-                //TODO: Check that operands of arit ops are int or float
-                //TODO: Check if operand is int or float
                 let { op, lhs, rhs } = expr.data as ast.BinOp;
+                let leftType = this.checkExpression(lhs);
+                let rightType = this.checkExpression(rhs);
+                if (!isOk(leftType) || !isOk(rightType)) {
+                    return {};
+                }
+                if (leftType.result.isArray || rightType.result.isArray) {
+                    this.reportError(
+                        "Arrays não podem participar de operações aritméticas",
+                        lhs
+                    );
+                    return {};
+                }
+                let lType = leftType.result.eType;
+                let rType = rightType.result.eType;
+                let errMsg = `Incompatibilidade entre os operandos do operador '${
+                    op.lexeme
+                }': '${lType.toLowerCase()}' e '${rType.toLowerCase()}'`;
+                const isNumeric = (eType: Type) =>
+                    eType == TT.REAL || rType == TT.INTEGER;
                 switch (op.token) {
                     case TT.ADDOP:
                     case TT.SUBOP:
                     case TT.DIV:
                     case TT.DIVOP:
                     case TT.MULOP: {
-                        let leftType = this.checkExpression(lhs);
-                        let rightType = this.checkExpression(rhs);
-                        if (!isOk(leftType) || !isOk(rightType)) {
-                            return {};
-                        }
-                        if (
-                            leftType.result.isArray ||
-                            rightType.result.isArray
-                        ) {
-                            this.reportError(
-                                "Arrays não podem participar de operações aritméticas",
-                                lhs
-                            );
-                            return {};
-                        }
-                        let lType = leftType.result.eType;
-                        let rType = rightType.result.eType;
-                        if (lType == TT.CHAR || rType == TT.CHAR) {
-                            this.reportError(
-                                `Incompatibilidade entre os operandos do operador '${
-                                    op.lexeme
-                                }': '${lType.toLowerCase()}' e '${rType.toLowerCase()}'`,
-                                lhs
-                            );
+                        if (!isNumeric(lType) || !isNumeric(rType)) {
+                            this.reportError(errMsg, lhs);
                             return {};
                         }
                         let eType =
@@ -227,8 +224,23 @@ class Checker {
                                 : TT.INTEGER;
                         return newType(eType, false);
                     }
+                    case TT.GREATER:
+                    case TT.GREATEREQ:
+                    case TT.LESS:
+                    case TT.LESSEQ:
+                    case TT.EQ:
+                    case TT.NOTEQ: {
+                        if (
+                            lType != rType &&
+                            (!isNumeric(lType) || !isNumeric(rType))
+                        ) {
+                            this.reportError(errMsg, lhs);
+                        }
+                        return newType(TT.BOOLEAN, false);
+                    }
+                    default:
+                        return {};
                 }
-                return {};
             }
             case ast.NodeKind.UnaryOp: {
                 //TODO: Check if operand is int or float
