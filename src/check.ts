@@ -1,15 +1,16 @@
 import * as ast from "./ast";
 import { TT } from "./token";
-import { equal } from "assert";
-import { Result, isOk } from "./types";
+import { Ok, Result, isOk } from "./types";
 
 type SemError = { line: number; message: string; col: number };
 
 type SymbolData = { kind: ast.NodeKind; data: ast.NodeData };
 type SymbolTable = Record<string, SymbolData>;
 
+type Type = TT.REAL | TT.CHAR | TT.INTEGER;
+
 interface EvalType {
-    eType: TT;
+    eType: Type;
     isArray: boolean;
 }
 
@@ -17,6 +18,11 @@ interface Scope {
     parent: Scope | null;
     symbols: SymbolTable;
 }
+
+const newType = (eType: TT, isArray: boolean) => {
+    eType = eType as Type;
+    return { result: { eType, isArray } };
+};
 
 class Checker {
     scope: Scope = { parent: null, symbols: {} };
@@ -49,7 +55,7 @@ class Checker {
         }
     }
 
-    check<T extends ast.NodeData>(node: ast.Node<T>) {
+    check(node: ast.Node<ast.NodeData>) {
         switch (node.nodeKind) {
             case ast.NodeKind.VarDecl: {
                 let varDecl = node as ast.Node<ast.VarDecl>;
@@ -70,6 +76,18 @@ class Checker {
                 let variable = node as ast.Node<ast.Variable>;
                 this.checkVariable(variable);
                 break;
+            }
+            case ast.NodeKind.BinOp:
+            case ast.NodeKind.UnaryOp:
+            case ast.NodeKind.Call:
+            case ast.NodeKind.Literal: {
+                let expression = node as ast.Node<ast.Expression>;
+                this.checkExpression(expression);
+                break;
+            }
+            case ast.NodeKind.Assign: {
+                let { target, expr } = node.data as ast.Assign;
+                this.checkExpression(expr);
             }
             default:
                 console.log(`Not implement yet`);
@@ -110,8 +128,9 @@ class Checker {
     }
 
     checkfuncDecl(node: ast.Node<ast.SubRoutine>) {
+        //TODO: Assert that functions return a value (also right type)
+        //TODO: Assert procedures do not return value;
         let { name, formal_params } = node.data;
-        //TODO: Dedup this code;
         let nameStr = name.lexeme;
         if (this.idIsDeclared(nameStr, node)) return;
         this.declareSymbol(nameStr, node.nodeKind, node.data);
@@ -148,7 +167,7 @@ class Checker {
             );
             return {};
         }
-        let { typeTok, isArray, range } = (<ast.VarDecl>(
+        let { typeTok, isArray } = (<ast.VarDecl>(
             (<SymbolData>data).data
         )).varType.data;
         if (index !== undefined && !isArray) {
@@ -158,7 +177,93 @@ class Checker {
             );
             return {};
         }
-        return { result: { eType: typeTok, isArray } };
+        //TODO: Check if index is a valid int;
+        //If the variable is an array access, evalType is the type
+        // of the element
+        return newType(typeTok.token, index ? false : isArray);
+    }
+
+    checkExpression(expr: ast.Node<ast.Expression>): Result<EvalType> {
+        switch (expr.nodeKind) {
+            case ast.NodeKind.BinOp: {
+                //TODO: Check that operands of arit ops are int or float
+                //TODO: Check if operand is int or float
+                let { op, lhs, rhs } = expr.data as ast.BinOp;
+                switch (op.token) {
+                    case TT.ADDOP:
+                    case TT.SUBOP:
+                    case TT.DIV:
+                    case TT.DIVOP:
+                    case TT.MULOP: {
+                        let leftType = this.checkExpression(lhs);
+                        let rightType = this.checkExpression(rhs);
+                        if (!isOk(leftType) || !isOk(rightType)) {
+                            return {};
+                        }
+                        if (
+                            leftType.result.isArray ||
+                            rightType.result.isArray
+                        ) {
+                            this.reportError(
+                                "Arrays não podem participar de operações aritméticas",
+                                lhs
+                            );
+                            return {};
+                        }
+                        let lType = leftType.result.eType;
+                        let rType = rightType.result.eType;
+                        if (lType == TT.CHAR || rType == TT.CHAR) {
+                            this.reportError(
+                                `Incompatibilidade entre os operandos do operador '${
+                                    op.lexeme
+                                }': '${lType.toLowerCase()}' e '${rType.toLowerCase()}'`,
+                                lhs
+                            );
+                            return {};
+                        }
+                        let eType =
+                            lType == TT.REAL || rType == TT.REAL
+                                ? TT.REAL
+                                : TT.INTEGER;
+                        return newType(eType, false);
+                    }
+                }
+                return {};
+            }
+            case ast.NodeKind.UnaryOp: {
+                //TODO: Check if operand is int or float
+                let { op, operand } = expr.data as ast.UnaryOp;
+                let operandType = this.checkExpression(operand);
+                if (!isOk(operandType)) {
+                    return {};
+                }
+                if (
+                    operandType.result.eType == TT.CHAR ||
+                    operandType.result.isArray
+                ) {
+                    this.reportError(
+                        `O operando do operador '${op.lexeme}' deve ser do tipo 'integer' ou do tipo 'real'`,
+                        operand
+                    );
+                    return {};
+                }
+                return operandType;
+            }
+            case ast.NodeKind.Call: {
+                //TODO: Check if the callee is a function;
+                //TODO: Check arity and assert that args match params;
+                return {};
+            }
+            case ast.NodeKind.Literal: {
+                let { tokType } = expr.data as ast.Literal;
+                return newType(tokType, false);
+            }
+            case ast.NodeKind.Variable: {
+                return this.checkVariable(expr as ast.Node<ast.Variable>);
+            }
+            default:
+                return {};
+        }
     }
 }
 

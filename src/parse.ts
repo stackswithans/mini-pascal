@@ -540,8 +540,9 @@ export class Parser {
             case TT.FALSE:
             case TT.STRING: {
                 let tok = this.consume(this.lookahead.token);
+                let typeTok = tok.token === TT.STRING ? TT.CHAR : tok.token;
                 return newNode(tok, ast.NodeKind.Literal, {
-                    tokType: tok.token,
+                    tokType: typeTok,
                     value: tok.lexeme,
                 });
             }

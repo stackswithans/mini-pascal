@@ -3,6 +3,7 @@ var
 angola: real;
 ide: INTEGER;
 ide: integer;
+kole: array [1..100] of char;
 
 procedure fa(barco: real; barco: integer);
 BEGIN
@@ -16,6 +17,13 @@ END;
 
 BEGIN
     read(teste);
-    write(ide[0])
+
+    write(ide[0]);
+
+    ide := -2; 
+    angola := 2 + 'string';
+    angola := 2.34 + kole;
+    angola := -'string'
+
 END
 .
